@@ -1,55 +1,106 @@
 import {
+  List,
+  ActionPanel,
+  Action,
   showToast,
   Toast,
   Clipboard,
-  LaunchProps,
+  Icon,
   showHUD,
+  popToRoot,
 } from "@raycast/api";
+import { useState } from "react";
 import { exportContext } from "./lib/cli";
+import { PROFILES, type Profile } from "./lib/types";
 import { showErrorWithFallback, createStandardFallbacks } from "./lib/fallbacks";
 
-interface ExportContextArguments {
-  profile?: "minimal" | "standard" | "full";
-}
+const PROFILE_INFO: Record<Profile, { title: string; description: string; icon: Icon }> = {
+  minimal: {
+    title: "Minimal",
+    description: "~5k tokens - identity & current state only",
+    icon: Icon.Dot,
+  },
+  standard: {
+    title: "Standard",
+    description: "~10k tokens - adds patterns & decision framework",
+    icon: Icon.Circle,
+  },
+  full: {
+    title: "Full",
+    description: "~15k tokens - all 6 context files",
+    icon: Icon.CircleFilled,
+  },
+};
 
-export default async function Command(
-  props: LaunchProps<{ arguments: ExportContextArguments }>
-) {
-  const profile = props.arguments.profile || "minimal";
+export default function Command() {
+  const [isLoading, setIsLoading] = useState(false);
 
-  const toast = await showToast({
-    style: Toast.Style.Animated,
-    title: "Exporting context...",
-    message: `Profile: ${profile}`,
-  });
+  async function handleExport(profile: Profile) {
+    setIsLoading(true);
 
-  try {
-    const result = await exportContext(profile);
+    const toast = await showToast({
+      style: Toast.Style.Animated,
+      title: "Exporting context...",
+      message: `Profile: ${profile}`,
+    });
 
-    if (result.success && result.data) {
-      const data = result.data as { content: string; tokenCount: number };
+    try {
+      const result = await exportContext(profile);
 
-      // Copy to clipboard
-      await Clipboard.copy(data.content);
+      if (result.success && result.data) {
+        const data = result.data as { content: string; tokenCount: number };
 
-      toast.style = Toast.Style.Success;
-      toast.title = "Context exported!";
-      toast.message = `${data.tokenCount} tokens copied to clipboard`;
+        // Copy to clipboard
+        await Clipboard.copy(data.content);
 
-      // Also show HUD for quick feedback
-      await showHUD(`✓ ${profile} context copied (${data.tokenCount} tokens)`);
-    } else {
+        toast.hide();
+        await showHUD(`✓ ${profile} context copied (${data.tokenCount} tokens)`);
+        await popToRoot();
+      } else {
+        toast.hide();
+        await showErrorWithFallback(
+          result.error || "Failed to export context",
+          createStandardFallbacks(`k context export --profile ${profile}`)
+        );
+        setIsLoading(false);
+      }
+    } catch (error) {
       toast.hide();
       await showErrorWithFallback(
-        result.error || "Failed to export context",
+        error instanceof Error ? error.message : "Unknown error",
         createStandardFallbacks(`k context export --profile ${profile}`)
       );
+      setIsLoading(false);
     }
-  } catch (error) {
-    toast.hide();
-    await showErrorWithFallback(
-      error instanceof Error ? error.message : "Unknown error",
-      createStandardFallbacks(`k context export --profile ${profile}`)
-    );
   }
+
+  return (
+    <List isLoading={isLoading} searchBarPlaceholder="Select context profile...">
+      {PROFILES.map((profile) => {
+        const info = PROFILE_INFO[profile];
+        return (
+          <List.Item
+            key={profile}
+            title={info.title}
+            subtitle={info.description}
+            icon={info.icon}
+            actions={
+              <ActionPanel>
+                <Action
+                  title="Export to Clipboard"
+                  icon={Icon.Clipboard}
+                  onAction={() => handleExport(profile)}
+                />
+                <Action.CopyToClipboard
+                  title="Copy Command"
+                  content={`k context export --profile ${profile}`}
+                  shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+                />
+              </ActionPanel>
+            }
+          />
+        );
+      })}
+    </List>
+  );
 }

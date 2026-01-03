@@ -12,7 +12,7 @@
       "name": "export-context",
       "title": "Export Context",
       "description": "Export personal context to clipboard",
-      "mode": "no-view"
+      "mode": "view"
     },
     {
       "name": "capture-tana",
