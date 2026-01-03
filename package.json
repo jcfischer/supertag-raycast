@@ -1,0 +1,63 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "kai",
+  "title": "KAI",
+  "description": "Quick access to KAI AI assistant - context export, Tana capture, and more",
+  "icon": "extension-icon.png",
+  "author": "fischer",
+  "categories": ["Productivity", "Developer Tools"],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "export-context",
+      "title": "Export Context",
+      "description": "Export personal context to clipboard",
+      "mode": "no-view"
+    },
+    {
+      "name": "capture-tana",
+      "title": "Capture to Tana",
+      "description": "Quick capture to Tana with supertag",
+      "mode": "view"
+    },
+    {
+      "name": "ask-kai",
+      "title": "Ask KAI",
+      "description": "Ask a quick question",
+      "mode": "view"
+    },
+    {
+      "name": "briefing",
+      "title": "Today's Briefing",
+      "description": "Show daily briefing summary",
+      "mode": "view"
+    },
+    {
+      "name": "commands",
+      "title": "KAI Commands",
+      "description": "Browse and launch k CLI commands",
+      "mode": "view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.92.1",
+    "@raycast/utils": "^1.19.1",
+    "execa": "^9.5.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "22.10.2",
+    "@types/react": "18.3.18",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "lint": "ray lint",
+    "lint:fix": "ray lint --fix",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}
