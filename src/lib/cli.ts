@@ -304,7 +304,7 @@ export async function getNodesBySupertag(tagName: string, limit = 200): Promise<
     const normalizedTagName = tagName.toLowerCase();
     const { stdout, exitCode } = await execa(
       SUPERTAG_PATH,
-      ["search", "--tag", normalizedTagName, "--include-descendants", "--json", "--limit", String(limit)],
+      ["search", "--tag", normalizedTagName, "--include-descendants", "--json", "--limit", String(limit), "--select", "id,name"],
       {
         timeout: 10000,
         reject: false,
