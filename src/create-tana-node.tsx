@@ -137,13 +137,17 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
       if (schemaData) {
         setSchema(schemaData);
 
-        // Filter and set visible fields
+        // Filter fields
         const filtered = schemaData.fields.filter((f) => {
           // Skip very deep inherited fields
           if (f.depth > 2) return false;
           return true;
         });
-        setVisibleFields(filtered);
+
+        // Delay rendering fields to let name field settle and prevent text selection
+        setTimeout(() => {
+          setVisibleFields(filtered);
+        }, 100);
 
         // Initialize field values - only set once to preserve user input
         setFieldValues((prev) => {
@@ -251,6 +255,7 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
       }
     >
       <NameField
+        key="node-name-field"
         supertag={supertag}
         onNameChange={handleNameChange}
       />
