@@ -6,8 +6,36 @@ Quick access to Tana via supertag-cli from Raycast.
 
 | Command | Description | Mode |
 |---------|-------------|------|
+| **Clip Web Page to Tana** | **Clip browser tab with URL, title, and selection** | **Form** |
 | **Capture to Tana** | **Quick capture with nested node support** | **Form** |
 | **Create Tana Node** | **Dynamic form for any supertag with field support** | **List + Form** |
+
+### Clip Web Page to Tana
+
+Clip the current browser tab to Tana with automatic metadata extraction:
+
+- **Smart browser detection** - Automatically detects frontmost browser using window z-order
+- **URL & Title** - Automatically captured from active tab
+- **Selection** - Captures selected text from the page
+- **Metadata** - Fetches Open Graph title, description, author
+- **Supertag picker** - Choose from built-in or your custom supertags
+- **Live preview** - See the Tana Paste format before saving
+
+**Supported browsers:** Safari, Chrome, Arc, Brave, Firefox, Zen
+
+#### Browser Setup
+
+**Safari** requires JavaScript permissions for selection capture:
+1. Go to **Safari > Settings > Advanced**
+2. Check **"Show features for web developers"**
+3. In the **Develop** menu, check **"Allow JavaScript from Apple Events"**
+
+**Firefox** and **Zen** have limited support (Firefox-based browsers don't expose tab data via AppleScript):
+- Only page title is captured automatically
+- Copy the URL to clipboard before clipping, or enter it manually
+- Selection capture is not available
+
+**Chrome**, **Arc**, and **Brave** work without additional setup.
 
 ### Capture to Tana Features
 

@@ -149,7 +149,7 @@ describe("SchemaCache", () => {
   });
 
   describe("T-2.4: Cache invalidation on file mtime change", () => {
-    it("should reload when file is modified", () => {
+    it("should reload when file is modified", async () => {
       const cache = getTestCache();
 
       // Initial load
@@ -180,16 +180,17 @@ describe("SchemaCache", () => {
         "schema-registry.json"
       );
 
-      // Wait a bit to ensure mtime changes
-      const now = new Date();
-      setTimeout(() => {
-        writeFileSync(testPath, JSON.stringify(modifiedSchema), "utf-8");
-        utimesSync(testPath, now, now); // Force mtime update
+      // Wait a bit to ensure mtime changes (filesystem mtime has 1 second resolution on some systems)
+      await new Promise((resolve) => setTimeout(resolve, 1100));
 
-        // Access cache again - should reload
-        person = cache.getSupertag("person");
-        expect(person!.description).toBe("Modified description");
-      }, 100);
+      // Write modified file with new mtime
+      const now = new Date();
+      writeFileSync(testPath, JSON.stringify(modifiedSchema), "utf-8");
+      utimesSync(testPath, now, now); // Force mtime update
+
+      // Access cache again - should reload
+      person = cache.getSupertag("person");
+      expect(person!.description).toBe("Modified description");
     });
   });
 

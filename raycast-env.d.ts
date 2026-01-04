@@ -17,6 +17,8 @@ declare namespace Preferences {
   export type CaptureTana = ExtensionPreferences & {}
   /** Preferences accessible in the `create-tana-node` command */
   export type CreateTanaNode = ExtensionPreferences & {}
+  /** Preferences accessible in the `clip-web` command */
+  export type ClipWeb = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -24,5 +26,7 @@ declare namespace Arguments {
   export type CaptureTana = {}
   /** Arguments passed to the `create-tana-node` command */
   export type CreateTanaNode = {}
+  /** Arguments passed to the `clip-web` command */
+  export type ClipWeb = {}
 }
 
