@@ -50,6 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Name Field Text Selection Bug** - Implemented two-screen flow to prevent dynamic field insertion issues
+  - Screen 1: Simple name input with background schema/options loading
+  - Screen 2: Full form with all fields pre-rendered (no dynamic insertion)
+  - Fixes critical UX issue where fast typers would accidentally clear the name field
+  - Workaround for known Raycast bug with dynamic form field insertion
+  - Schema and options now preload during name entry for instant Screen 2 rendering
+
 - **Multi-Level Nested Nodes** - Fixed recursive children conversion for unlimited depth
   - Nested children now work correctly at all levels (tested to 4+ levels)
   - Fixed `tanaNodeToApiNode` in supertag-cli to recursively convert children
