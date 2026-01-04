@@ -1,9 +1,9 @@
 ---
 feature: "Schema Cache for Raycast Performance"
 plan: "./plan.md"
-status: "pending"
+status: "completed"
 total_tasks: 18
-completed: 0
+completed: 18
 ---
 
 # Tasks: Schema Cache for Raycast Performance
@@ -162,26 +162,26 @@ T-3.4 ──┼──> T-4.2 ──┼──> T-4.3 ──> T-4.4
 
 | Task | Status | Started | Completed | Notes |
 |------|--------|---------|-----------|-------|
-| T-1.1 | pending | - | - | |
-| T-1.2 | pending | - | - | |
-| T-1.3 | pending | - | - | |
-| T-1.4 | pending | - | - | |
-| T-2.1 | pending | - | - | |
-| T-2.2 | pending | - | - | |
-| T-2.3 | pending | - | - | |
-| T-2.4 | pending | - | - | |
-| T-2.5 | pending | - | - | |
-| T-2.6 | pending | - | - | |
-| T-2.7 | pending | - | - | |
-| T-2.8 | pending | - | - | |
-| T-3.1 | pending | - | - | |
-| T-3.2 | pending | - | - | |
-| T-3.3 | pending | - | - | |
-| T-3.4 | pending | - | - | |
-| T-4.1 | pending | - | - | |
-| T-4.2 | pending | - | - | |
-| T-4.3 | pending | - | - | |
-| T-4.4 | pending | - | - | |
+| T-1.1 | completed | 2026-01-04 | 2026-01-04 | Added targetSupertag to FieldSchema |
+| T-1.2 | completed | 2026-01-04 | 2026-01-04 | Tests for target supertag export |
+| T-1.3 | completed | 2026-01-04 | 2026-01-04 | Export target supertag in toSchemaRegistryJSON() |
+| T-1.4 | completed | 2026-01-04 | 2026-01-04 | Backward compatibility verified (62 tests pass) |
+| T-2.1 | completed | 2026-01-04 | 2026-01-04 | Created CachedSupertag and CachedField interfaces |
+| T-2.2 | completed | 2026-01-04 | 2026-01-04 | Test for loading schema-registry.json |
+| T-2.3 | completed | 2026-01-04 | 2026-01-04 | Test for getSupertag() lookup |
+| T-2.4 | completed | 2026-01-04 | 2026-01-04 | Test for mtime-based cache invalidation |
+| T-2.5 | completed | 2026-01-04 | 2026-01-04 | Test for in-memory caching |
+| T-2.6 | completed | 2026-01-04 | 2026-01-04 | SchemaCache class implementation |
+| T-2.7 | completed | 2026-01-04 | 2026-01-04 | Test for missing file handling |
+| T-2.8 | completed | 2026-01-04 | 2026-01-04 | Test for corrupted JSON handling |
+| T-3.1 | completed | 2026-01-04 | 2026-01-04 | SchemaCache integrated into NodeForm |
+| T-3.2 | completed | 2026-01-04 | 2026-01-04 | CLI fallback working |
+| T-3.3 | completed | 2026-01-04 | 2026-01-04 | Reference fields use cached targetSupertag (with recursion) |
+| T-3.4 | completed | 2026-01-04 | 2026-01-04 | Cache hit/miss logging added |
+| T-4.1 | completed | 2026-01-04 | 2026-01-04 | All 62 tests pass in supertag-cli |
+| T-4.2 | completed | 2026-01-04 | 2026-01-04 | All 11 tests pass in kai-raycast |
+| T-4.3 | completed | 2026-01-04 | 2026-01-04 | User confirmed <10ms performance |
+| T-4.4 | completed | 2026-01-04 | 2026-01-04 | Documentation updated |
 
 ## TDD Reminder
 
@@ -196,13 +196,17 @@ For each task marked [T]:
 - Current task's tests pass
 - Full test suite passes (no regressions)
 
-## Blockers & Issues
+## Issues Discovered During Testing
 
-[Track any blockers discovered during implementation]
+Three issues found and fixed during user testing:
 
-| Task | Issue | Resolution |
-|------|-------|------------|
-| - | - | - |
+| Issue | Root Cause | Fix | Commit |
+|-------|------------|-----|--------|
+| Wrong "todo" supertag selected (XREuzJk36V instead of fbAkgDqs3k) | toSchemaRegistryJSON() exported ALL supertags without deduplication | Added canonical selection logic (prefer more parents → more fields) | 79f45e6 |
+| Schema file stale, showing wrong data types | schema-registry.json generated before DB had correct types | Regenerated schema-registry.json with updated CLI | N/A (regeneration) |
+| Missing inherited fields (todo showed 4 fields instead of full set) | SchemaCache.getSupertag() only returned direct fields | Added collectInheritedFields() for recursive parent field collection | 2f8be90 |
+
+All issues resolved, user confirmed "everything seems to be working".
 
 ## Performance Targets
 

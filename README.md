@@ -19,6 +19,7 @@ The **Create Tana Node** command provides a dynamic form builder for Tana:
 
 - **Supertag picker** - Browse all supertags sorted by usage count
 - **Dynamic field generation** - Form fields automatically generated from supertag schema
+- **Fast schema loading** - File-based schema cache (<10ms) instead of CLI spawning (200-500ms)
 - **Smart field types**:
   - Text fields for simple input
   - Date pickers (timezone-aware, no off-by-one errors)
@@ -26,8 +27,10 @@ The **Create Tana Node** command provides a dynamic form builder for Tana:
   - **Dropdowns for reference fields** - Populated from existing field values
   - **"Options from supertag" support** - Dropdowns populated from related supertags (e.g., Company field shows all company nodes)
 - **Case-insensitive matching** - Finds options regardless of capitalization
-- **Inherited fields** - Shows fields from parent supertags
+- **Inherited fields** - Shows fields from parent supertags (recursive collection)
 - **Direct API integration** - Creates nodes via Tana Input API
+
+**Performance:** Schema cache provides 20-50x faster form loading by reading `schema-registry.json` directly instead of spawning CLI processes. Automatically falls back to CLI if cache unavailable.
 
 ## Prerequisites
 
@@ -67,6 +70,7 @@ kai-raycast
 │   ├── commands.tsx            # List command
 │   └── lib/
 │       ├── cli.ts              # k + supertag CLI wrappers (execa)
+│       ├── schema-cache.ts     # File-based schema registry cache
 │       ├── types.ts            # Zod schemas
 │       ├── fallbacks.ts        # Error handling utilities
 │       └── terminal.ts         # Terminal launcher
