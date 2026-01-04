@@ -76,8 +76,8 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
           fields: cachedSchema.fields.map((f) => ({
             fieldName: f.name,
             fieldLabelId: f.attributeId,
-            originTagName: cachedSchema.name,
-            depth: 0, // Cached schema doesn't track depth
+            originTagName: f.originTagName || cachedSchema.name,
+            depth: f.depth ?? 0,
             inferredDataType: f.dataType as any,
             targetSupertagId: f.targetSupertag?.id,
             targetSupertagName: f.targetSupertag?.name,

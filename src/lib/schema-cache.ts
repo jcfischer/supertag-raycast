@@ -34,6 +34,10 @@ export interface CachedField {
     /** Target supertag name */
     name: string;
   };
+  /** Origin supertag name (for inherited fields) - added during collection */
+  originTagName?: string;
+  /** Inheritance depth (0 = own field, 1+ = inherited) - added during collection */
+  depth?: number;
 }
 
 /**
@@ -102,12 +106,70 @@ export class SchemaCache {
   }
 
   /**
-   * Get supertag schema by name
+   * Get supertag schema by name with all fields (including inherited)
    * Returns null if not found or on error
    */
   getSupertag(tagName: string): CachedSupertag | null {
     this.refreshIfNeeded();
-    return this.cache?.get(tagName) ?? null;
+    const supertag = this.cache?.get(tagName);
+    if (!supertag) return null;
+
+    // Collect all fields including inherited ones
+    const allFields = this.collectInheritedFields(supertag, new Set());
+
+    return {
+      ...supertag,
+      fields: allFields,
+    };
+  }
+
+  /**
+   * Recursively collect fields from supertag and all parents
+   * Prevents duplicates and infinite loops
+   */
+  private collectInheritedFields(
+    supertag: CachedSupertag,
+    visited: Set<string>,
+    depth: number = 0
+  ): CachedField[] {
+    // Prevent infinite loops
+    if (visited.has(supertag.id)) return [];
+    visited.add(supertag.id);
+
+    const allFields: CachedField[] = [];
+    const seenFieldNames = new Set<string>();
+
+    // Add own fields first (they take precedence)
+    for (const field of supertag.fields) {
+      if (!seenFieldNames.has(field.name)) {
+        seenFieldNames.add(field.name);
+        allFields.push({
+          ...field,
+          originTagName: supertag.name,
+          depth: depth,
+        });
+      }
+    }
+
+    // Add inherited fields from parents
+    if (supertag.extends && this.cache) {
+      for (const parentId of supertag.extends) {
+        // Find parent by ID
+        const parent = Array.from(this.cache.values()).find(s => s.id === parentId);
+        if (parent) {
+          const parentFields = this.collectInheritedFields(parent, visited, depth + 1);
+          for (const field of parentFields) {
+            // Only add if not already present (child fields override)
+            if (!seenFieldNames.has(field.name)) {
+              seenFieldNames.add(field.name);
+              allFields.push(field);
+            }
+          }
+        }
+      }
+    }
+
+    return allFields;
   }
 
   /**
