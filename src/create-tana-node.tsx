@@ -159,9 +159,9 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
       title: "Creating node...",
     });
 
-    // Filter out empty fields and handle "NEW:" values
-    const nonEmptyFields: Record<string, string> = {};
-    const creationPromises: Promise<void>[] = [];
+    // Build field values, handling "NEW:" values as inline node creation
+    const fields: Record<string, any> = {};
+    let hasNewNodes = false;
 
     for (const [key, value] of Object.entries(fieldValues)) {
       if (!value.trim()) continue;
@@ -174,46 +174,29 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
         // Find the field schema to get target supertag
         const fieldSchema = schema?.fields.find((f) => f.fieldName === key);
         if (!fieldSchema?.targetSupertagName) {
-          // Can't create without knowing target supertag
-          nonEmptyFields[key] = newName; // Fallback to text value
+          // Can't create without knowing target supertag - use text value
+          fields[key] = newName;
           continue;
         }
 
-        // Create the new node asynchronously
-        creationPromises.push(
-          (async () => {
-            toast.message = `Creating ${fieldSchema.targetSupertagName}: ${newName}...`;
-            const createResult = await createTanaNode(
-              fieldSchema.targetSupertagName,
-              newName
-            );
-
-            if (createResult.success) {
-              // Note: supertag-cli doesn't return the created node ID yet,
-              // so we'll use the name as a fallback
-              // TODO: Update when supertag-cli returns node ID
-              nonEmptyFields[key] = newName;
-            } else {
-              // If creation fails, just use the name as text
-              nonEmptyFields[key] = newName;
-            }
-          })()
-        );
+        // Create nested node object - Tana Input API supports inline node creation
+        // Format: field value as object with name and supertag
+        fields[key] = {
+          name: newName,
+          supertag: fieldSchema.targetSupertagName,
+        };
+        hasNewNodes = true;
+        toast.message = `Will create ${fieldSchema.targetSupertagName}: ${newName}`;
       } else {
-        nonEmptyFields[key] = value.trim();
+        fields[key] = value.trim();
       }
-    }
-
-    // Wait for all new nodes to be created
-    if (creationPromises.length > 0) {
-      await Promise.all(creationPromises);
     }
 
     toast.message = undefined;
     const result = await createTanaNode(
       supertag.tagName,
       name.trim(),
-      Object.keys(nonEmptyFields).length > 0 ? nonEmptyFields : undefined
+      Object.keys(fields).length > 0 ? fields : undefined
     );
 
     if (result.success) {
