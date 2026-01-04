@@ -316,7 +316,7 @@ function FieldInput({
       }
 
       // For reference fields, allow creating new nodes by typing a name
-      if (field.inferredDataType === "reference" && options && options.length > 0) {
+      if (field.inferredDataType === "reference") {
         // Show dropdown with existing options AND a text field to create new
         // Value format: if starts with "NEW:", it's a new name to create; otherwise it's an existing ID
         const isNewValue = value.startsWith("NEW:");
@@ -332,9 +332,9 @@ function FieldInput({
               onChange={(newValue) => onChange(newValue)} // Clear "NEW:" prefix when dropdown selected
             >
               <Form.Dropdown.Item value="" title="(select existing or create new below)" />
-              {options.map((opt) => (
+              {options?.map((opt) => (
                 <Form.Dropdown.Item key={opt.id} value={opt.id} title={opt.text} />
-              ))}
+              )) || []}
             </Form.Dropdown>
             <Form.TextField
               id={`${field.fieldLabelId}-new`}
