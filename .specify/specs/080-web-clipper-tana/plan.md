@@ -250,7 +250,7 @@ Core clipping without AI or templates. Get basic flow working.
 
 ### Phase 2: Enhanced Capture
 
-Full article extraction and multi-highlight support.
+Full article extraction, multi-highlight support, and smart supertag detection.
 
 - [ ] Add `@mozilla/readability` and `turndown` dependencies
 - [ ] Create `lib/web-clipper/article.ts` - Readability wrapper
@@ -259,8 +259,17 @@ Full article extraction and multi-highlight support.
 - [ ] Add reading time estimate display
 - [ ] Support multiple highlights in session
 - [ ] Domain preference memory (last used supertag)
+- [ ] **Smart supertag detection** - Scan workspace for clip-friendly tags:
+  - Query schema-cache for supertags with URL field
+  - Score by presence of text fields (notes/summary/highlight)
+  - Rank and suggest in dropdown
+- [ ] **Dynamic field mapping** - Map clip data to schema fields:
+  - URL → first url-type field
+  - Selection → text field matching notes/summary/highlight/snapshot pattern
+  - Author/Description → matching field names
+  - Remove hardcoded field mappings from clip-web.tsx
 
-**Success:** Can extract clean article content, see reading time
+**Success:** Can extract clean article content, selection saves to correct field for any supertag
 
 ### Phase 3: Templates
 

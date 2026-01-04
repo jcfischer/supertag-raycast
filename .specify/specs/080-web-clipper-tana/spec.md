@@ -269,6 +269,27 @@ Remember preferred supertag per domain for faster repeat clips.
 
 **Validation:** Second clip from same domain pre-selects previous supertag
 
+#### FR-17b: Smart Supertag Detection (NEW)
+
+Scan user's workspace for supertags suitable for web clipping:
+- Has a URL field (url type)
+- Has text fields for selection/notes/summary/highlights
+- Optionally has Author, Description, or similar metadata fields
+
+Auto-suggest these tags in the supertag dropdown, ranked by relevance.
+
+**Validation:** Discovers #bookmark, #article, #resource without hardcoding
+
+#### FR-17c: Dynamic Field Mapping (NEW)
+
+Map clip data to supertag fields based on schema analysis:
+- URL → first url-type field
+- Selection → first text field named notes/summary/highlight/snapshot or longest text field
+- Author → field named author/creator/by
+- Description → field named description/summary/about
+
+**Validation:** Selection saves to correct field regardless of supertag schema
+
 #### FR-18: Tana Paste Fallback (NEW)
 
 Generate Tana Paste format for clipboard when offline or API unavailable.
@@ -348,6 +369,8 @@ Show real-time preview of Tana Paste output in clip dialog.
 - [ ] Multi-highlight support
 - [ ] Template system with variables
 - [ ] Domain-based template matching
+- [ ] Smart supertag detection - scan workspace for clip-friendly tags (URL field, text fields for notes/summary)
+- [ ] Dynamic field mapping based on detected supertag schema
 
 ### AI-Powered (Phase 3)
 - [ ] AI summarization (Claude or Ollama)

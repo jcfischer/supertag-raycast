@@ -2,7 +2,7 @@
 feature: "Web Clipper to Tana"
 plan: "./plan.md"
 status: "phase1_complete"
-total_tasks: 38
+total_tasks: 42
 completed: 12
 phase1_completed: "2026-01-04"
 ---
@@ -150,6 +150,28 @@ Article extraction, markdown conversion, domain memory.
 
 - File: `src/clip-web.tsx`
 - Description: On load, check domain prefs and pre-select last used supertag
+
+### T-2.11 Create supertag analyzer [T] [P]
+
+- File: `src/lib/web-clipper/supertag-analyzer.ts`
+- Test: `src/lib/__tests__/web-clipper/supertag-analyzer.test.ts`
+- Description: Analyze supertag schemas to find clip-friendly tags. Score by: has URL field (+10), has text field named notes/summary/highlight (+5), has author field (+2). Return ranked list.
+
+### T-2.12 Create field mapper [T] (depends: T-2.11)
+
+- File: `src/lib/web-clipper/field-mapper.ts`
+- Test: `src/lib/__tests__/web-clipper/field-mapper.test.ts`
+- Description: Map clip data to supertag fields dynamically. URL → url-type field, Selection → text field matching pattern (notes|summary|highlight|snapshot), Author → author/creator field.
+
+### T-2.13 Integrate smart supertag dropdown (depends: T-2.11)
+
+- File: `src/clip-web.tsx`
+- Description: Replace hardcoded supertag list with analyzed tags. Show "Recommended" section for high-scoring tags.
+
+### T-2.14 Replace hardcoded field mapping (depends: T-2.12)
+
+- File: `src/clip-web.tsx`
+- Description: Use field-mapper instead of hardcoded bookmark/resource/reference mappings. Remove TODO comment.
 
 ---
 
@@ -386,6 +408,10 @@ T-4.2 ────────────┘
 | T-2.8 | pending | - | - | Multi-highlight |
 | T-2.9 | pending | - | - | Domain memory |
 | T-2.10 | pending | - | - | Domain pre-select |
+| T-2.11 | pending | - | - | Supertag analyzer |
+| T-2.12 | pending | - | - | Field mapper |
+| T-2.13 | pending | - | - | Smart supertag dropdown |
+| T-2.14 | pending | - | - | Replace hardcoded mapping |
 | **Phase 3: Templates** |
 | T-3.1 | pending | - | - | Template engine |
 | T-3.2 | pending | - | - | Filters |
@@ -436,7 +462,7 @@ For each task marked [T]:
 
 | Phase | Tasks | Success Criteria |
 |-------|-------|------------------|
-| 1: Foundation | T-1.1 → T-1.12 | Can clip current tab to Tana with selection and see preview |
-| 2: Enhanced | T-2.1 → T-2.10 | Can extract clean article content, see reading time |
+| 1: Foundation | T-1.1 → T-1.12 | ✅ Can clip current tab to Tana with selection and see preview |
+| 2: Enhanced | T-2.1 → T-2.14 | Can extract article, selection saves to correct field for any supertag |
 | 3: Templates | T-3.1 → T-3.10 | Templates auto-select by domain, variables resolve |
 | 4: AI | T-4.1 → T-4.8 | AI summary appears in clip, works with Ollama |
