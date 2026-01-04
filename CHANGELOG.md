@@ -50,6 +50,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Reference Fields Without Options** - Reference fields with no existing options now show create new capability
+  - Previously fell through to plain text field without "NEW:" prefix logic
+  - Now ALL reference fields show dropdown + "Or create new" text field
+  - Fixes fields like "⚙️ Origin" not allowing tagged node creation
+  - Empty dropdowns are acceptable when no existing options exist
+
 - **Name Field Text Selection Bug** - Implemented two-screen flow to prevent dynamic field insertion issues
   - Screen 1: Simple name input with background schema/options loading
   - Screen 2: Full form with all fields pre-rendered (no dynamic insertion)
