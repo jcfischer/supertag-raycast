@@ -37,6 +37,12 @@
       "title": "KAI Commands",
       "description": "Browse and launch k CLI commands",
       "mode": "view"
+    },
+    {
+      "name": "create-tana-node",
+      "title": "Create Tana Node",
+      "description": "Create a node in Tana with any supertag",
+      "mode": "view"
     }
   ],
   "dependencies": {

@@ -38,10 +38,8 @@ export default function Command() {
       const result = await captureTana(text.trim(), supertag);
 
       if (result.success && result.data) {
-        const data = result.data as { message: string; paste: string };
-
         toast.style = Toast.Style.Success;
-        toast.title = "Tana Paste copied!";
+        toast.title = "Created in Tana!";
         toast.message = `#${supertag}: "${text.slice(0, 30)}${text.length > 30 ? "..." : ""}"`;
 
         await popToRoot();

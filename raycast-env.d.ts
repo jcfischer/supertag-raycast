@@ -23,6 +23,8 @@ declare namespace Preferences {
   export type Briefing = ExtensionPreferences & {}
   /** Preferences accessible in the `commands` command */
   export type Commands = ExtensionPreferences & {}
+  /** Preferences accessible in the `create-tana-node` command */
+  export type CreateTanaNode = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -36,5 +38,7 @@ declare namespace Arguments {
   export type Briefing = {}
   /** Arguments passed to the `commands` command */
   export type Commands = {}
+  /** Arguments passed to the `create-tana-node` command */
+  export type CreateTanaNode = {}
 }
 
