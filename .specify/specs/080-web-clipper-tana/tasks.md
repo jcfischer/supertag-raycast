@@ -1,9 +1,9 @@
 ---
 feature: "Web Clipper to Tana"
 plan: "./plan.md"
-status: "pending"
+status: "in_progress"
 total_tasks: 38
-completed: 0
+completed: 12
 ---
 
 # Tasks: Web Clipper to Tana
@@ -362,18 +362,18 @@ T-4.2 ────────────┘
 | Task | Status | Started | Completed | Notes |
 |------|--------|---------|-----------|-------|
 | **Phase 1: Foundation** |
-| T-1.1 | pending | - | - | WebClip types |
-| T-1.2 | pending | - | - | Storage service |
-| T-1.3 | pending | - | - | Browser (Safari) |
-| T-1.4 | pending | - | - | Browser (Chrome/Arc) |
-| T-1.5 | pending | - | - | Browser (Firefox) |
-| T-1.6 | pending | - | - | Metadata fetcher |
-| T-1.7 | pending | - | - | Tana Paste builder |
-| T-1.8 | pending | - | - | Index exports |
-| T-1.9 | pending | - | - | Clip-web UI |
-| T-1.10 | pending | - | - | Live preview |
-| T-1.11 | pending | - | - | Clipboard fallback |
-| T-1.12 | pending | - | - | Package.json |
+| T-1.1 | completed | 2026-01-04 | 2026-01-04 | WebClip types with Zod |
+| T-1.2 | completed | 2026-01-04 | 2026-01-04 | Storage service |
+| T-1.3 | completed | 2026-01-04 | 2026-01-04 | Browser (Safari) |
+| T-1.4 | completed | 2026-01-04 | 2026-01-04 | Browser (Chrome/Arc) |
+| T-1.5 | completed | 2026-01-04 | 2026-01-04 | Browser (Firefox) |
+| T-1.6 | completed | 2026-01-04 | 2026-01-04 | Metadata fetcher |
+| T-1.7 | completed | 2026-01-04 | 2026-01-04 | Tana Paste builder |
+| T-1.8 | completed | 2026-01-04 | 2026-01-04 | Index exports |
+| T-1.9 | completed | 2026-01-04 | 2026-01-04 | Clip-web UI |
+| T-1.10 | completed | 2026-01-04 | 2026-01-04 | Live preview (in T-1.9) |
+| T-1.11 | completed | 2026-01-04 | 2026-01-04 | Clipboard fallback |
+| T-1.12 | completed | 2026-01-04 | 2026-01-04 | Package.json |
 | **Phase 2: Enhanced** |
 | T-2.1 | pending | - | - | Dependencies |
 | T-2.2 | pending | - | - | Article extractor |
