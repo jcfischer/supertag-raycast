@@ -1,8 +1,9 @@
 ---
 feature: "Web Clipper to Tana"
 spec: "./spec.md"
-status: "draft"
+status: "phase1_complete"
 created: "2026-01-04"
+updated: "2026-01-04"
 ---
 
 # Technical Plan: Web Clipper to Tana
@@ -227,24 +228,25 @@ type TemplateVariable =
 
 ## Implementation Strategy
 
-### Phase 1: Foundation (MVP)
+### Phase 1: Foundation (MVP) ✅ COMPLETE
 
 Core clipping without AI or templates. Get basic flow working.
 
-- [ ] Create `lib/web-clipper/browser.ts` - AppleScript for Safari/Chrome/Arc/Firefox
-- [ ] Create `lib/web-clipper/content.ts` - Metadata fetching via fetch + cheerio
-- [ ] Create `lib/web-clipper/tana-paste.ts` - Tana Paste format builder
-- [ ] Create `src/clip-web.tsx` - Basic form UI with:
+- [x] Create `lib/web-clipper/browser.ts` - AppleScript for Safari/Chrome/Arc/Firefox + Brave/Zen
+- [x] Create `lib/web-clipper/content.ts` - Metadata fetching via fetch + cheerio
+- [x] Create `lib/web-clipper/tana-paste.ts` - Tana Paste format builder
+- [x] Create `src/clip-web.tsx` - Basic form UI with:
   - URL/title from active tab
   - Selection capture
   - Supertag dropdown (reuse existing cache)
   - Live preview panel
   - Save action with fallback
-- [ ] Add command to `package.json`
-- [ ] Unit tests for browser service mocks
-- [ ] Integration test with real browser (manual)
+- [x] Add command to `package.json`
+- [x] Unit tests for browser service mocks (69 tests)
+- [x] Integration test with real browser (manual)
+- [x] Smart browser detection using CGWindowListCopyWindowInfo (z-order)
 
-**Success:** Can clip current tab to Tana with selection and see preview
+**Success:** ✅ Can clip current tab to Tana with selection and see preview
 
 ### Phase 2: Enhanced Capture
 

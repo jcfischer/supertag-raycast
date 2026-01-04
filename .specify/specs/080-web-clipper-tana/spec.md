@@ -1,7 +1,7 @@
 ---
 id: "080"
 feature: "Web Clipper to Tana"
-status: "draft"
+status: "phase1_complete"
 created: "2026-01-04"
 updated: "2026-01-04"
 research: "Notion, Readwise Reader, Roam, Obsidian Web Clipper"
@@ -334,13 +334,14 @@ Show real-time preview of Tana Paste output in clip dialog.
 
 ## Success Criteria
 
-### MVP (Phase 1)
-- [ ] Clip from browser works for 4 major browsers
-- [ ] Creates valid Tana nodes with URL field
-- [ ] Selection capture works reliably
-- [ ] Offline fallback to Tana Paste clipboard
-- [ ] Supertag selection UI is intuitive
-- [ ] Live preview of Tana Paste format
+### MVP (Phase 1) ✅ COMPLETE
+- [x] Clip from browser works for 6 browsers (Safari, Chrome, Arc, Brave, Firefox, Zen)
+- [x] Creates valid Tana nodes with URL field
+- [x] Selection capture works reliably (Safari requires JS permission)
+- [x] Offline fallback to Tana Paste clipboard
+- [x] Supertag selection UI is intuitive
+- [x] Live preview of Tana Paste format
+- [x] Smart browser detection using window z-order
 
 ### Enhanced (Phase 2)
 - [ ] Full article extraction with Readability

@@ -1,9 +1,10 @@
 ---
 feature: "Web Clipper to Tana"
 plan: "./plan.md"
-status: "in_progress"
+status: "phase1_complete"
 total_tasks: 38
 completed: 12
+phase1_completed: "2026-01-04"
 ---
 
 # Tasks: Web Clipper to Tana
