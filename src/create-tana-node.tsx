@@ -132,6 +132,9 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
         const optionsMap: Record<string, FieldOption[]> = {};
         for (const { fieldName, options } of optionsResults) {
           optionsMap[fieldName] = options;
+          if (process.env.NODE_ENV === "development") {
+            console.log(`[FieldOptions] ${fieldName}: ${options.length} options`);
+          }
         }
         setFieldOptions(optionsMap);
       } else {
@@ -275,6 +278,9 @@ function FieldInput({
 
     case "options":
     case "reference":
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[FieldInput] ${field.fieldName}: ${options?.length || 0} options, type=${field.inferredDataType}`);
+      }
       if (options && options.length > 0) {
         return (
           <Form.Dropdown
@@ -295,7 +301,7 @@ function FieldInput({
         <Form.TextField
           id={field.fieldLabelId}
           title={title}
-          placeholder={placeholder}
+          placeholder={placeholder || "No options available"}
           value={value}
           onChange={onChange}
         />
