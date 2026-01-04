@@ -16,7 +16,6 @@ import {
   createTanaNode,
   getFieldOptions,
   getNodesBySupertag,
-  extractSupertagFromFieldName,
   type SupertagInfo,
   type SupertagSchema,
   type SupertagField,
@@ -82,10 +81,9 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
             const optResult = await getFieldOptions(field.fieldName);
             return { fieldName: field.fieldName, options: optResult.data || [] };
           } else {
-            // Reference field - try to get nodes from matching supertag
-            const tagName = extractSupertagFromFieldName(field.fieldName);
-            if (tagName) {
-              const optResult = await getNodesBySupertag(tagName);
+            // Reference field - use stored target supertag name from field definition
+            if (field.targetSupertagName) {
+              const optResult = await getNodesBySupertag(field.targetSupertagName);
               return { fieldName: field.fieldName, options: optResult.data || [] };
             }
             return { fieldName: field.fieldName, options: [] };

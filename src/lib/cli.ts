@@ -189,6 +189,8 @@ export interface SupertagField {
   originTagName: string;
   depth: number;
   inferredDataType: "text" | "date" | "reference" | "options" | "number" | "checkbox";
+  targetSupertagId?: string;
+  targetSupertagName?: string;
 }
 
 export interface SupertagSchema {

@@ -8,15 +8,34 @@ Quick access to KAI AI assistant capabilities from Raycast.
 |---------|-------------|------|
 | Export Context | Export personal context to clipboard | No View |
 | Capture to Tana | Quick capture with supertag selection | Form |
+| **Create Tana Node** | **Dynamic form for any supertag with field support** | **List + Form** |
 | Ask KAI | Ask a question, get inline or terminal response | Form + Detail |
 | Today's Briefing | Show daily summary (calendar, tasks, email) | Detail |
 | KAI Commands | Browse and launch k CLI commands | List |
+
+### Create Tana Node Features
+
+The **Create Tana Node** command provides a dynamic form builder for Tana:
+
+- **Supertag picker** - Browse all supertags sorted by usage count
+- **Dynamic field generation** - Form fields automatically generated from supertag schema
+- **Smart field types**:
+  - Text fields for simple input
+  - Date pickers (timezone-aware, no off-by-one errors)
+  - Checkboxes for boolean fields
+  - **Dropdowns for reference fields** - Populated from existing field values
+  - **"Options from supertag" support** - Dropdowns populated from related supertags (e.g., Company field shows all company nodes)
+- **Case-insensitive matching** - Finds options regardless of capitalization
+- **Inherited fields** - Shows fields from parent supertags
+- **Direct API integration** - Creates nodes via Tana Input API
 
 ## Prerequisites
 
 - [Raycast](https://raycast.com/) installed
 - `k` CLI (kai-launcher) installed at `~/bin/k`
+- `supertag` CLI (supertag-cli) installed at `~/work/supertag-cli/supertag`
 - KAI infrastructure set up
+- Tana workspace synced (required for Create Tana Node command)
 
 ## Installation
 
@@ -40,16 +59,17 @@ npm run build
 ```
 kai-raycast
 ├── src/
-│   ├── export-context.tsx   # No-view command
-│   ├── capture-tana.tsx     # Form command
-│   ├── ask-kai.tsx          # Form + Detail command
-│   ├── briefing.tsx         # Detail command
-│   ├── commands.tsx         # List command
+│   ├── export-context.tsx      # No-view command
+│   ├── capture-tana.tsx        # Form command
+│   ├── create-tana-node.tsx    # List + Dynamic form command
+│   ├── ask-kai.tsx             # Form + Detail command
+│   ├── briefing.tsx            # Detail command
+│   ├── commands.tsx            # List command
 │   └── lib/
-│       ├── cli.ts           # k CLI wrapper (execa)
-│       ├── types.ts         # Zod schemas
-│       ├── fallbacks.ts     # Error handling utilities
-│       └── terminal.ts      # Terminal launcher
+│       ├── cli.ts              # k + supertag CLI wrappers (execa)
+│       ├── types.ts            # Zod schemas
+│       ├── fallbacks.ts        # Error handling utilities
+│       └── terminal.ts         # Terminal launcher
 ```
 
 ## How It Works
@@ -76,12 +96,27 @@ When CLI commands fail:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | K_PATH | ~/bin/k | Path to k CLI binary |
+| SUPERTAG_PATH | ~/work/supertag-cli/supertag | Path to supertag CLI binary |
 
 ## Dependencies
 
 - `@raycast/api` - Raycast extension SDK
-- `execa` - Execute k CLI commands
+- `execa` - Execute CLI commands (k and supertag)
 - `zod` - Validate CLI responses
+
+## Known Issues & Fixes
+
+### Date Fields
+- ✅ **Fixed**: Date picker now uses local timezone (no more off-by-one errors)
+- Previously: Selecting 2026-01-06 would save as 2025-01-05
+
+### Name Field Reset
+- ✅ **Fixed**: User input preserved during async schema loading
+- Previously: Name field would clear when form finished loading
+
+### Missing Options in Dropdowns
+- ✅ **Fixed**: Case-insensitive tag matching + increased limit to 200
+- Example: "Company" field now finds lowercase "company" supertag nodes
 
 ## Related
 
