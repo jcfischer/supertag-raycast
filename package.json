@@ -19,6 +19,12 @@
       "title": "Create Tana Node",
       "description": "Create a node in Tana with any supertag and fields",
       "mode": "view"
+    },
+    {
+      "name": "clip-web",
+      "title": "Clip Web Page to Tana",
+      "description": "Clip the current browser tab to Tana with URL, title, and selection",
+      "mode": "view"
     }
   ],
   "dependencies": {
