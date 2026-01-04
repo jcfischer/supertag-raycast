@@ -216,6 +216,8 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
         id="name"
         title="Name"
         placeholder={`Enter ${supertag.tagName} name...`}
+        defaultValue=""
+        storeValue
         onChange={(newName) => {
           nameRef.current = newName;
         }}
