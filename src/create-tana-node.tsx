@@ -48,25 +48,11 @@ function getFieldIcon(dataType: string): Icon {
  */
 function NodeForm({ supertag }: { supertag: SupertagInfo }) {
   const [schema, setSchema] = useState<SupertagSchema | null>(null);
-  const [name, setName] = useState("");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [fieldOptions, setFieldOptions] = useState<Record<string, FieldOption[]>>({});
 
-  // Use ref to preserve name across re-renders
+  // Use ref to store name value (uncontrolled approach)
   const nameRef = useRef("");
-
-  // Custom handler that updates both state and ref
-  const handleNameChange = (newName: string) => {
-    nameRef.current = newName;
-    setName(newName);
-  };
-
-  // Restore name from ref if it gets cleared by a re-render
-  useEffect(() => {
-    if (!name && nameRef.current) {
-      setName(nameRef.current);
-    }
-  }, [name, schema, fieldOptions]);
 
   useEffect(() => {
     async function loadSchema() {
@@ -159,7 +145,9 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
   }, [supertag.tagName]);
 
   async function handleSubmit() {
-    if (!name.trim()) {
+    const nodeName = nameRef.current.trim();
+
+    if (!nodeName) {
       await showToast({
         style: Toast.Style.Failure,
         title: "Name required",
@@ -193,14 +181,14 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
 
     const result = await createTanaNode(
       supertag.tagName,
-      name.trim(),
+      nodeName,
       Object.keys(fields).length > 0 ? fields : undefined
     );
 
     if (result.success) {
       toast.style = Toast.Style.Success;
       toast.title = "Created in Tana!";
-      toast.message = `#${supertag.tagName}: ${name}`;
+      toast.message = `#${supertag.tagName}: ${nodeName}`;
       await popToRoot();
     } else {
       toast.style = Toast.Style.Failure;
@@ -228,8 +216,9 @@ function NodeForm({ supertag }: { supertag: SupertagInfo }) {
         id="name"
         title="Name"
         placeholder={`Enter ${supertag.tagName} name...`}
-        value={name}
-        onChange={handleNameChange}
+        onChange={(newName) => {
+          nameRef.current = newName;
+        }}
       />
 
       {visibleFields.length > 0 && <Form.Separator />}
