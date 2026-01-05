@@ -164,9 +164,11 @@ export {
   type AIRequest,
   type AIResult,
   type AIOptions,
+  type OllamaModel,
   AIProviderError,
   createAIProvider,
   ClaudeProvider,
   OllamaProvider,
   DisabledProvider,
+  fetchOllamaModels,
 } from "./ai";

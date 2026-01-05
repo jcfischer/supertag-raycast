@@ -37,6 +37,8 @@ import {
   getTemplateFieldNames,
   // AI
   createAIProvider,
+  fetchOllamaModels,
+  type OllamaModel,
 } from "./lib/web-clipper";
 import { LocalStorage } from "@raycast/api";
 import { SchemaCache } from "./lib/schema-cache";
@@ -58,8 +60,9 @@ interface Preferences {
   aiProvider: "claude" | "ollama" | "disabled";
   claudeApiKey?: string;
   ollamaEndpoint?: string;
-  ollamaModel?: string;
   autoSummarize: boolean;
+  autoExtractKeypoints: boolean;
+  autoSaveFullText: boolean;
 }
 
 /**
@@ -133,21 +136,54 @@ export default function Command() {
   const [aiSummary, setAiSummary] = useState<string | undefined>();
   const [aiKeypoints, setAiKeypoints] = useState<string[] | undefined>();
 
+  // Ollama model state
+  const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([]);
+  const [selectedOllamaModel, setSelectedOllamaModel] = useState<string>("");
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+
   // Initialize AI provider from preferences
   const preferences = getPreferenceValues<Preferences>();
+
+  // Fetch Ollama models when provider is Ollama
+  useEffect(() => {
+    if (preferences.aiProvider !== "ollama") {
+      setOllamaModels([]);
+      return;
+    }
+
+    async function loadModels() {
+      setIsLoadingModels(true);
+      try {
+        const models = await fetchOllamaModels(preferences.ollamaEndpoint);
+        setOllamaModels(models);
+        // Select first model by default if none selected
+        if (models.length > 0 && !selectedOllamaModel) {
+          setSelectedOllamaModel(models[0].name);
+        }
+      } catch {
+        setOllamaModels([]);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    }
+
+    loadModels();
+  }, [preferences.aiProvider, preferences.ollamaEndpoint]);
+
+  // Create AI provider (depends on selected Ollama model)
   const aiProvider = useMemo(() => {
     try {
       return createAIProvider({
         provider: preferences.aiProvider,
         claudeApiKey: preferences.claudeApiKey,
         ollamaEndpoint: preferences.ollamaEndpoint,
-        ollamaModel: preferences.ollamaModel,
+        ollamaModel: selectedOllamaModel || undefined,
         autoSummarize: preferences.autoSummarize,
       });
     } catch {
       return null; // Fallback to disabled if config invalid
     }
-  }, [preferences]);
+  }, [preferences, selectedOllamaModel]);
 
   // Load initial data from browser
   useEffect(() => {
@@ -241,10 +277,16 @@ export default function Command() {
     return matchedTemplate;
   }, [useTemplate, selectedTemplateId, matchedTemplate]);
 
-  // Extract article when toggle is enabled
+  // Check if auto-extract is needed (AI features enabled)
+  const shouldAutoExtract =
+    aiProvider &&
+    (preferences.autoSummarize || preferences.autoExtractKeypoints);
+
+  // Extract article when toggle is enabled OR when AI auto-features require it
   useEffect(() => {
-    if (!extractArticle || !url) {
-      setArticle(null);
+    const needsExtraction = extractArticle || shouldAutoExtract;
+    if (!needsExtraction || !url) {
+      if (!extractArticle) setArticle(null);
       return;
     }
 
@@ -278,7 +320,59 @@ export default function Command() {
     }
 
     doExtract();
-  }, [extractArticle, url]);
+  }, [extractArticle, url, shouldAutoExtract]);
+
+  // Auto-run AI features when article is extracted and settings are enabled
+  useEffect(() => {
+    if (!article?.markdown || !aiProvider) return;
+
+    async function runAutoAI() {
+      setIsAiProcessing(true);
+      try {
+        // Auto-summarize if enabled
+        if (preferences.autoSummarize && !aiSummary) {
+          const result = await aiProvider.process({
+            url,
+            title,
+            content: article.markdown,
+            operation: "summarize",
+          });
+          if (result.summary) {
+            setAiSummary(result.summary);
+            setDescription(result.summary);
+          }
+        }
+
+        // Auto-extract keypoints if enabled
+        if (preferences.autoExtractKeypoints && !aiKeypoints) {
+          const result = await aiProvider.process({
+            url,
+            title,
+            content: article.markdown,
+            operation: "extract-keypoints",
+          });
+          if (result.keypoints && result.keypoints.length > 0) {
+            setAiKeypoints(result.keypoints);
+          }
+        }
+      } catch (error) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "AI processing failed",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
+      } finally {
+        setIsAiProcessing(false);
+      }
+    }
+
+    runAutoAI();
+  }, [
+    article,
+    aiProvider,
+    preferences.autoSummarize,
+    preferences.autoExtractKeypoints,
+  ]);
 
   // Build live preview - include current highlight with saved ones
   // Filter out any empty or whitespace-only highlights
@@ -453,6 +547,10 @@ export default function Command() {
       }
 
       // Add article content as children, nesting paragraphs under headlines
+      // Only add full text if autoSaveFullText is enabled (or extractArticle was manually toggled)
+      const shouldSaveFullText =
+        preferences.autoSaveFullText || (extractArticle && !shouldAutoExtract);
+
       // Track total size to stay under Tana Input API 5000 char limit
       let totalChars =
         JSON.stringify(fields).length +
@@ -461,7 +559,7 @@ export default function Command() {
       const MAX_PAYLOAD_SIZE = 4800; // Leave buffer for JSON overhead (Tana API limit: 5000)
       let wasTruncated = false;
 
-      if (article?.markdown) {
+      if (article?.markdown && shouldSaveFullText) {
         // Split by lines first, then process
         const lines = article.markdown.split("\n");
         let currentHeadline: TanaChildNode | null = null;
@@ -804,6 +902,40 @@ export default function Command() {
         onChange={setExtractArticle}
         info="Extract the main article content as markdown using Readability"
       />
+
+      {preferences.aiProvider === "ollama" && (
+        <Form.Dropdown
+          id="ollamaModel"
+          title="Ollama Model"
+          value={selectedOllamaModel}
+          onChange={setSelectedOllamaModel}
+          isLoading={isLoadingModels}
+          info={
+            ollamaModels.length === 0 && !isLoadingModels
+              ? "No models found. Is Ollama running?"
+              : undefined
+          }
+        >
+          {ollamaModels.length > 0 ? (
+            ollamaModels.map((model) => (
+              <Form.Dropdown.Item
+                key={model.name}
+                value={model.name}
+                title={model.name}
+                icon={Icon.ComputerChip}
+              />
+            ))
+          ) : (
+            <Form.Dropdown.Item
+              value=""
+              title={
+                isLoadingModels ? "Loading models..." : "No models available"
+              }
+              icon={Icon.Warning}
+            />
+          )}
+        </Form.Dropdown>
+      )}
 
       <Form.Separator />
 

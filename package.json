@@ -69,22 +69,29 @@
           "placeholder": "http://localhost:11434"
         },
         {
-          "name": "ollamaModel",
-          "type": "textfield",
-          "required": false,
-          "title": "Ollama Model",
-          "description": "Ollama model name",
-          "default": "llama3.2",
-          "placeholder": "llama3.2"
-        },
-        {
           "name": "autoSummarize",
           "type": "checkbox",
           "required": false,
-          "title": "Auto-summarize articles",
-          "description": "Automatically generate summary when extracting full article",
+          "title": "Auto Features",
+          "description": "Automatically generate summary when extracting article",
           "default": false,
-          "label": "Enable auto-summarization"
+          "label": "Auto-summarize articles"
+        },
+        {
+          "name": "autoExtractKeypoints",
+          "type": "checkbox",
+          "required": false,
+          "description": "Automatically extract key points when extracting article",
+          "default": false,
+          "label": "Auto-extract key points"
+        },
+        {
+          "name": "autoSaveFullText",
+          "type": "checkbox",
+          "required": false,
+          "description": "Save full article text to Tana (otherwise only AI summary/keypoints are saved)",
+          "default": true,
+          "label": "Save full article text"
         }
       ]
     }

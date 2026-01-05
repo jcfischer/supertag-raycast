@@ -16,6 +16,53 @@ interface OllamaResponse {
   done: boolean;
 }
 
+/**
+ * Model info from Ollama API
+ */
+export interface OllamaModel {
+  name: string;
+  size: number;
+  modified_at: string;
+}
+
+interface OllamaTagsResponse {
+  models: Array<{
+    name: string;
+    size: number;
+    modified_at: string;
+  }>;
+}
+
+/**
+ * Fetch available models from Ollama
+ * @param endpoint - Ollama API endpoint (default: http://localhost:11434)
+ * @returns List of available models or empty array if unavailable
+ */
+export async function fetchOllamaModels(
+  endpoint = "http://localhost:11434",
+): Promise<OllamaModel[]> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const normalizedEndpoint = endpoint.replace(/\/$/, "");
+    const response = await fetch(`${normalizedEndpoint}/api/tags`, {
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = (await response.json()) as OllamaTagsResponse;
+    return data.models || [];
+  } catch {
+    return [];
+  }
+}
+
 export class OllamaProvider implements AIProvider {
   readonly name = "ollama";
   private endpoint: string;

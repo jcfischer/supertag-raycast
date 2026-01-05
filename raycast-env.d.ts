@@ -25,10 +25,12 @@ declare namespace Preferences {
   "claudeApiKey"?: string,
   /** Ollama Endpoint - Ollama API endpoint */
   "ollamaEndpoint": string,
-  /** Ollama Model - Ollama model name */
-  "ollamaModel": string,
-  /** Auto-summarize articles - Automatically generate summary when extracting full article */
-  "autoSummarize": boolean
+  /** Auto Features - Automatically generate summary when extracting article */
+  "autoSummarize": boolean,
+  /** undefined - Automatically extract key points when extracting article */
+  "autoExtractKeypoints": boolean,
+  /** undefined - Save full article text to Tana (otherwise only AI summary/keypoints are saved) */
+  "autoSaveFullText": boolean
 }
 }
 

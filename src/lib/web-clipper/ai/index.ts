@@ -7,5 +7,6 @@ export { createAIProvider } from "./factory";
 
 // Providers (for testing)
 export { ClaudeProvider } from "./providers/claude";
-export { OllamaProvider } from "./providers/ollama";
+export { OllamaProvider, fetchOllamaModels } from "./providers/ollama";
+export type { OllamaModel } from "./providers/ollama";
 export { DisabledProvider } from "./providers/disabled";
