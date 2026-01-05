@@ -429,7 +429,8 @@ export default function Command() {
         );
         const summaryFieldName = summaryMapping.fieldMap["Summary"];
         if (summaryFieldName) {
-          fields[summaryFieldName] = aiSummary;
+          // Strip newlines - Tana Paste fields must be single-line
+          fields[summaryFieldName] = aiSummary.replace(/\n/g, " ").trim();
         }
       }
 
@@ -668,7 +669,7 @@ export default function Command() {
 
       if (result.keypoints && result.keypoints.length > 0) {
         setAiKeypoints(result.keypoints);
-        setHighlights([...highlights, ...result.keypoints]);
+        // Don't add to highlights - they'll be structured under "Key Points" node
         await showToast({
           style: Toast.Style.Success,
           title: "Key points extracted",
