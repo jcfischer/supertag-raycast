@@ -290,6 +290,15 @@ export async function getActiveTab(browser?: BrowserName): Promise<BrowserTab> {
  * Get tab info from a specific browser
  */
 async function getTabFromBrowser(browser: BrowserName): Promise<BrowserTab> {
+  // Special handling for Arc - check for Little Arc windows
+  if (browser === "Arc") {
+    try {
+      return await getArcTabWithLittleArcSupport();
+    } catch {
+      // Fall through to standard method if Little Arc detection fails
+    }
+  }
+
   const script = BROWSER_SCRIPTS[browser].tab;
 
   try {
@@ -324,6 +333,112 @@ async function getTabFromBrowser(browser: BrowserName): Promise<BrowserTab> {
       `Failed to get tab from ${browser}: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
+}
+
+/**
+ * Get tab info from Arc with support for Little Arc pop-up windows.
+ * Little Arc windows are not exposed via Arc's AppleScript, but can be detected
+ * via System Events. Uses "Copy URL" menu command as fallback.
+ */
+async function getArcTabWithLittleArcSupport(): Promise<BrowserTab> {
+  // Get the System Events "main" window (which could be a Little Arc window)
+  const { stdout: sysEventsMainWindow } = await execa(
+    "osascript",
+    [
+      "-e",
+      `
+      tell application "System Events"
+        tell process "Arc"
+          set mainWindow to (first window whose value of attribute "AXMain" is true)
+          return name of mainWindow
+        end tell
+      end tell
+    `,
+    ],
+    { timeout: 5000 },
+  );
+  const mainWindowTitle = sysEventsMainWindow.trim();
+
+  // Try Arc's native AppleScript to get the front window title
+  let arcFrontWindowTitle = "";
+  try {
+    const { stdout: arcTitle } = await execa(
+      "osascript",
+      [
+        "-e",
+        `
+        tell application "Arc"
+          return title of active tab of front window
+        end tell
+      `,
+      ],
+      { timeout: 5000 },
+    );
+    arcFrontWindowTitle = arcTitle.trim();
+  } catch {
+    // Arc's native AppleScript failed - likely a Little Arc window
+  }
+
+  // Check if the titles match - if not, we're in a Little Arc window
+  const isLittleArc =
+    !arcFrontWindowTitle || mainWindowTitle !== arcFrontWindowTitle;
+
+  if (isLittleArc) {
+    // Use "Copy URL" menu item via System Events for Little Arc
+    const { stdout: url } = await execa(
+      "osascript",
+      [
+        "-e",
+        `
+        tell application "System Events"
+          tell process "Arc"
+            click menu item "Copy URL" of menu "Edit" of menu bar 1
+            delay 0.2
+            return the clipboard
+          end tell
+        end tell
+      `,
+      ],
+      { timeout: 5000 },
+    );
+
+    const cleanUrl = url.trim();
+    new URL(cleanUrl); // Validate URL
+
+    // Extract page title from window title (remove " — " prefix if present for downloads pages, etc.)
+    let pageTitle = mainWindowTitle;
+    if (pageTitle.includes(" — ")) {
+      // Window title format is often "Page Title — Site Name" or "Download — Page Title"
+      const parts = pageTitle.split(" — ");
+      pageTitle = parts.length > 1 ? parts.slice(1).join(" — ") : parts[0];
+    }
+
+    return {
+      url: cleanUrl,
+      title: pageTitle || "Untitled",
+      browser: "Arc",
+    };
+  }
+
+  // Not a Little Arc window - use standard Arc AppleScript
+  const { stdout } = await execa("osascript", ["-e", BROWSER_SCRIPTS.Arc.tab], {
+    timeout: 5000,
+  });
+
+  const lines = stdout.trim().split("\n");
+  if (lines.length < 2) {
+    throw new Error("Invalid response from Arc");
+  }
+
+  const urlStr = lines[0].trim();
+  const title = lines.slice(1).join("\n").trim();
+  new URL(urlStr); // Validate URL
+
+  return {
+    url: urlStr,
+    title: title || "Untitled",
+    browser: "Arc",
+  };
 }
 
 /**
