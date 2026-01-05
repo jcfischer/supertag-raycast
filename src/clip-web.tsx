@@ -474,18 +474,32 @@ export default function Command() {
           // Skip empty or whitespace-only content
           if (!text || text.length < 2) return;
 
-          if (totalChars + text.length > MAX_PAYLOAD_SIZE) {
-            wasTruncated = true;
-            return;
-          }
-
           if (currentHeadline) {
+            // When adding to a headline, check estimated size but don't increment totalChars yet
+            // (will be counted when headline is flushed to avoid double-counting)
+            const estimatedHeadlineSize =
+              currentHeadline.name.length +
+              (currentHeadline.children?.reduce(
+                (sum, c) => sum + c.name.length,
+                0,
+              ) || 0) +
+              text.length +
+              50; // JSON overhead estimate
+            if (totalChars + estimatedHeadlineSize > MAX_PAYLOAD_SIZE) {
+              wasTruncated = true;
+              return;
+            }
             currentHeadline.children = currentHeadline.children || [];
             currentHeadline.children.push({ name: text });
           } else {
+            // Top-level paragraph - check and count immediately
+            if (totalChars + text.length > MAX_PAYLOAD_SIZE) {
+              wasTruncated = true;
+              return;
+            }
             children.push({ name: text });
+            totalChars += text.length;
           }
-          totalChars += text.length;
         };
 
         const flushHeadline = () => {
@@ -498,9 +512,13 @@ export default function Command() {
               return;
             }
             children.push(currentHeadline);
-            totalChars += headlineSize; // Add full serialized size, not just name
+            totalChars += headlineSize;
           } else {
             // Headline without children - add as plain text
+            if (totalChars + currentHeadline.name.length > MAX_PAYLOAD_SIZE) {
+              wasTruncated = true;
+              return;
+            }
             children.push({ name: currentHeadline.name });
             totalChars += currentHeadline.name.length;
           }
