@@ -366,7 +366,7 @@ export async function getNodesBySupertag(
   try {
     // Use lowercase for case-insensitive tag matching
     const normalizedTagName = tagName.toLowerCase();
-    const { stdout, exitCode } = await execa(
+    const { stdout, exitCode, stderr } = await execa(
       SUPERTAG_PATH,
       [
         "search",
@@ -382,6 +382,7 @@ export async function getNodesBySupertag(
       {
         timeout: 10000,
         reject: false,
+        maxBuffer: 10 * 1024 * 1024, // 10MB buffer to handle large result sets
         env: {
           ...process.env,
           PATH: `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`,

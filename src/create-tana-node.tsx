@@ -311,12 +311,6 @@ function FieldInput({
 
     case "options":
     case "reference":
-      if (process.env.NODE_ENV === "development") {
-        console.log(
-          `[FieldInput] ${field.fieldName}: ${options?.length || 0} options, type=${field.inferredDataType}`,
-        );
-      }
-
       // For reference fields, allow creating new nodes by typing a name
       if (field.inferredDataType === "reference") {
         // Show dropdown with existing options AND a text field to create new
