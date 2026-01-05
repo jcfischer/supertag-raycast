@@ -18,10 +18,45 @@ Clip the current browser tab to Tana with automatic metadata extraction:
 - **URL & Title** - Automatically captured from active tab
 - **Selection** - Captures selected text from the page
 - **Metadata** - Fetches Open Graph title, description, author
+- **Article extraction** - Extract full article content using Mozilla Readability
+- **AI features** - Summarize articles and extract key points (optional)
+- **Template system** - Auto-detect site type (GitHub, YouTube, etc.) for optimized capture
 - **Supertag picker** - Choose from built-in or your custom supertags
 - **Live preview** - See the Tana Paste format before saving
 
 **Supported browsers:** Safari, Chrome, Arc, Brave, Firefox, Zen
+
+#### AI Features (Optional)
+
+The web clipper supports AI-powered summarization and key point extraction. AI is **disabled by default** and must be configured in Extension Settings.
+
+**Supported AI Providers:**
+
+| Provider | Setup | Best For |
+|----------|-------|----------|
+| **Claude** | API key from Anthropic | High-quality summaries |
+| **Ollama** | Local installation | Privacy, offline use |
+
+**Configuration (Raycast Settings > Extensions > Supertag for Tana > Clip Web Page):**
+
+| Setting | Description |
+|---------|-------------|
+| AI Provider | Choose Claude, Ollama, or Disabled |
+| Claude API Key | Your Anthropic API key (sk-ant-...) |
+| Ollama Endpoint | Local endpoint (default: http://localhost:11434) |
+| Ollama Model | Model to use (llama3.2, mistral, etc.) |
+| Auto-summarize | Generate summary when article is extracted |
+| Auto-extract key points | Extract key points when article is extracted |
+| Save full article text | Include full article content in Tana (default: on) |
+
+**Usage:**
+1. Configure AI provider in Extension Settings
+2. Open a web page and invoke "Clip Web Page to Tana"
+3. Toggle "Extract Full Article" or use keyboard shortcuts:
+   - `Cmd+Shift+S` - Summarize with AI
+   - `Cmd+Shift+K` - Extract Key Points
+
+**Note:** If auto-summarize or auto-extract is enabled, the article is extracted automatically but full text is only saved to Tana if "Save full article text" is enabled.
 
 #### Browser Setup
 
@@ -167,12 +202,24 @@ supertag-raycast
 ├── src/
 │   ├── capture-tana.tsx        # Form command for quick capture
 │   ├── create-tana-node.tsx    # List + Dynamic form command
+│   ├── clip-web.tsx            # Web clipper with AI features
 │   └── lib/
 │       ├── cli.ts              # supertag CLI wrappers (execa)
 │       ├── schema-cache.ts     # File-based schema registry cache
 │       ├── types.ts            # Supertag type definitions
 │       ├── fallbacks.ts        # Error handling utilities
-│       └── terminal.ts         # Terminal launcher
+│       ├── terminal.ts         # Terminal launcher
+│       └── web-clipper/        # Web clipper module
+│           ├── browser.ts      # Browser tab detection (AppleScript)
+│           ├── content.ts      # Article extraction (Readability)
+│           ├── markdown.ts     # HTML to Markdown (Turndown)
+│           ├── tana-paste.ts   # Tana Paste format builder
+│           ├── template.ts     # Site-specific templates
+│           ├── storage.ts      # Domain preferences
+│           └── ai/             # AI providers
+│               ├── providers/claude.ts   # Anthropic SDK
+│               ├── providers/ollama.ts   # Local Ollama
+│               └── providers/disabled.ts # Noop (default)
 ```
 
 ## How It Works
@@ -214,6 +261,10 @@ When CLI commands fail:
 ## Dependencies
 
 - `@raycast/api` - Raycast extension SDK
+- `@anthropic-ai/sdk` - Claude AI integration (optional)
+- `@mozilla/readability` - Article extraction
+- `linkedom` - DOM parsing for article extraction
+- `turndown` - HTML to Markdown conversion
 - `execa` - Execute CLI commands (supertag)
 - `zod` - Validate responses
 

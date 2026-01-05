@@ -147,6 +147,112 @@ export interface ExtractedArticle extends ArticleContent {
 }
 
 /**
+ * Heading with context for re-injection after Readability processing
+ */
+interface HeadingWithContext {
+  level: number; // 2 for h2, 3 for h3
+  text: string; // Heading text
+  followingText: string; // First ~50 chars of following paragraph (for matching)
+}
+
+/**
+ * Extract H2/H3 headings from HTML with their following paragraph text
+ * Used to re-inject headings that Readability strips
+ */
+function extractHeadingsFromHTML(html: string): HeadingWithContext[] {
+  const headings: HeadingWithContext[] = [];
+
+  // Match h2 and h3 tags - use a more permissive regex that handles nested elements
+  const headingRegex = /<h([23])[^>]*>([\s\S]*?)<\/h\1>/gi;
+
+  let match;
+  while ((match = headingRegex.exec(html)) !== null) {
+    const level = parseInt(match[1], 10);
+    // Clean heading text - remove nested tags and decode entities
+    const rawText = match[2]
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const text = decodeHtmlEntities(rawText);
+
+    if (!text || text.length < 3) continue;
+
+    // Find the text that follows this heading (for matching later)
+    const afterHeading = html.slice(match.index + match[0].length);
+    // Get first paragraph or text content after heading
+    const paragraphMatch = afterHeading.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+    let followingText = "";
+    if (paragraphMatch) {
+      followingText = decodeHtmlEntities(
+        paragraphMatch[1].replace(/<[^>]*>/g, ""),
+      )
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 60); // First 60 chars for matching
+    }
+
+    headings.push({ level, text, followingText });
+  }
+
+  return headings;
+}
+
+/**
+ * Inject missing headings back into markdown
+ * Finds locations by matching followingText and inserts heading before
+ */
+function injectMissingHeadings(
+  markdown: string,
+  headings: HeadingWithContext[],
+): string {
+  let result = markdown;
+
+  for (const heading of headings) {
+    // Check if heading already exists in markdown (case-insensitive)
+    const headingMarker = "#".repeat(heading.level);
+    const headingPattern = new RegExp(
+      `^${headingMarker}\\s+${escapeRegex(heading.text)}\\s*$`,
+      "im",
+    );
+
+    if (headingPattern.test(result)) {
+      continue; // Heading already exists
+    }
+
+    // Try to find the location by matching following text
+    if (heading.followingText && heading.followingText.length > 15) {
+      // Use first 30 chars for matching to avoid special chars issues
+      const searchText = heading.followingText.slice(0, 30);
+      const searchIndex = result.indexOf(searchText);
+
+      if (searchIndex !== -1) {
+        // Find the start of the line containing this text
+        let lineStart = searchIndex;
+        while (lineStart > 0 && result[lineStart - 1] !== "\n") {
+          lineStart--;
+        }
+
+        // Don't insert if line already starts with # (is a heading)
+        if (result[lineStart] !== "#") {
+          const headingLine = `${headingMarker} ${heading.text}\n\n`;
+          result =
+            result.slice(0, lineStart) + headingLine + result.slice(lineStart);
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Escape special regex characters
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * Fetch and extract article content from a URL
  * Combines fetching, Readability extraction, and markdown conversion
  * @param url - URL to fetch and extract
@@ -170,6 +276,10 @@ export async function extractArticle(
     }
 
     const html = await response.text();
+
+    // Extract headings from original HTML before Readability strips them
+    const originalHeadings = extractHeadingsFromHTML(html);
+
     const article = await extractArticleFromHTML(html, url);
 
     if (!article) {
@@ -177,7 +287,12 @@ export async function extractArticle(
     }
 
     // Convert HTML content to markdown
-    const markdown = htmlToMarkdown(article.content);
+    let markdown = htmlToMarkdown(article.content);
+
+    // Re-inject any headings that Readability stripped
+    if (originalHeadings.length > 0) {
+      markdown = injectMissingHeadings(markdown, originalHeadings);
+    }
 
     return {
       ...article,

@@ -267,6 +267,11 @@ export async function createTanaNode(
       }
     }
 
+    // Debug: log the command being executed
+    if (process.env.NODE_ENV === "development") {
+      console.log("[createTanaNode] Command:", SUPERTAG_PATH, args.join(" "));
+    }
+
     const { stdout, stderr, exitCode } = await execa(SUPERTAG_PATH, args, {
       timeout: 30000,
       reject: false,

@@ -51,14 +51,26 @@ const FIELD_ALIASES: Record<string, string[]> = {
   Description: [
     "Description",
     "description",
-    "Summary",
-    "summary",
     "Excerpt",
     "excerpt",
     "About",
     "about",
     "Overview",
     "overview",
+  ],
+
+  // Summary variations (for AI-generated summaries)
+  Summary: [
+    "Summary",
+    "summary",
+    "Abstract",
+    "abstract",
+    "Synopsis",
+    "synopsis",
+    "TL;DR",
+    "tldr",
+    "Description",
+    "description",
   ],
 
   // Title variations
@@ -144,6 +156,19 @@ function findMatchingField(
     );
     if (match) {
       return match.name;
+    }
+  }
+
+  // Try reverse lookup: check if any schema field has aliases that include the template field
+  for (const field of schemaFields) {
+    const fieldAliases = FIELD_ALIASES[field.name];
+    if (fieldAliases) {
+      const match = fieldAliases.find(
+        (alias) => alias.toLowerCase() === templateFieldName.toLowerCase(),
+      );
+      if (match) {
+        return field.name;
+      }
     }
   }
 

@@ -7,6 +7,7 @@ import {
   popToRoot,
   Clipboard,
   Icon,
+  getPreferenceValues,
 } from "@raycast/api";
 import { useState, useEffect, useMemo } from "react";
 import {
@@ -34,6 +35,8 @@ import {
   createSmartFieldMapping,
   applySmartFieldMapping,
   getTemplateFieldNames,
+  // AI
+  createAIProvider,
 } from "./lib/web-clipper";
 import { LocalStorage } from "@raycast/api";
 import { SchemaCache } from "./lib/schema-cache";
@@ -50,6 +53,17 @@ const storage = new WebClipStorage({
 // Schema cache for supertag analysis
 const schemaCache = new SchemaCache();
 
+// Preferences interface
+interface Preferences {
+  aiProvider: "claude" | "ollama" | "disabled";
+  claudeApiKey?: string;
+  ollamaEndpoint?: string;
+  ollamaModel?: string;
+  autoSummarize: boolean;
+  autoExtractKeypoints: boolean;
+  autoSaveFullText: boolean;
+}
+
 /**
  * Create a WebClip from current state
  */
@@ -60,6 +74,8 @@ function createClipFromState(
   highlightTexts: string[],
   metadata: OpenGraphMeta | null,
   articleContent?: string,
+  aiSummary?: string,
+  aiKeypoints?: string[],
 ): WebClip {
   return {
     url,
@@ -73,6 +89,8 @@ function createClipFromState(
       .filter((text) => text && text.trim())
       .map((text) => ({ text })),
     content: articleContent,
+    summary: aiSummary,
+    keypoints: aiKeypoints,
     clippedAt: new Date().toISOString(),
   };
 }
@@ -94,6 +112,7 @@ export default function Command() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
 
   // Data
   const [browserTab, setBrowserTab] = useState<BrowserTab | null>(null);
@@ -111,6 +130,27 @@ export default function Command() {
     null,
   );
   const [useTemplate, setUseTemplate] = useState(true);
+
+  // AI state
+  const [aiSummary, setAiSummary] = useState<string | undefined>();
+  const [aiKeypoints, setAiKeypoints] = useState<string[] | undefined>();
+
+  // Initialize AI provider from preferences
+  const preferences = getPreferenceValues<Preferences>();
+
+  const aiProvider = useMemo(() => {
+    try {
+      return createAIProvider({
+        provider: preferences.aiProvider,
+        claudeApiKey: preferences.claudeApiKey,
+        ollamaEndpoint: preferences.ollamaEndpoint,
+        ollamaModel: preferences.ollamaModel,
+        autoSummarize: preferences.autoSummarize,
+      });
+    } catch {
+      return null; // Fallback to disabled if config invalid
+    }
+  }, [preferences]);
 
   // Load initial data from browser
   useEffect(() => {
@@ -204,10 +244,16 @@ export default function Command() {
     return matchedTemplate;
   }, [useTemplate, selectedTemplateId, matchedTemplate]);
 
-  // Extract article when toggle is enabled
+  // Check if auto-extract is needed (AI features enabled)
+  const shouldAutoExtract =
+    aiProvider &&
+    (preferences.autoSummarize || preferences.autoExtractKeypoints);
+
+  // Extract article when toggle is enabled OR when AI auto-features require it
   useEffect(() => {
-    if (!extractArticle || !url) {
-      setArticle(null);
+    const needsExtraction = extractArticle || shouldAutoExtract;
+    if (!needsExtraction || !url) {
+      if (!extractArticle) setArticle(null);
       return;
     }
 
@@ -241,7 +287,59 @@ export default function Command() {
     }
 
     doExtract();
-  }, [extractArticle, url]);
+  }, [extractArticle, url, shouldAutoExtract]);
+
+  // Auto-run AI features when article is extracted and settings are enabled
+  useEffect(() => {
+    if (!article?.markdown || !aiProvider) return;
+
+    async function runAutoAI() {
+      setIsAiProcessing(true);
+      try {
+        // Auto-summarize if enabled
+        if (preferences.autoSummarize && !aiSummary) {
+          const result = await aiProvider.process({
+            url,
+            title,
+            content: article.markdown,
+            operation: "summarize",
+          });
+          if (result.summary) {
+            setAiSummary(result.summary);
+            setDescription(result.summary);
+          }
+        }
+
+        // Auto-extract keypoints if enabled
+        if (preferences.autoExtractKeypoints && !aiKeypoints) {
+          const result = await aiProvider.process({
+            url,
+            title,
+            content: article.markdown,
+            operation: "extract-keypoints",
+          });
+          if (result.keypoints && result.keypoints.length > 0) {
+            setAiKeypoints(result.keypoints);
+          }
+        }
+      } catch (error) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "AI processing failed",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
+      } finally {
+        setIsAiProcessing(false);
+      }
+    }
+
+    runAutoAI();
+  }, [
+    article,
+    aiProvider,
+    preferences.autoSummarize,
+    preferences.autoExtractKeypoints,
+  ]);
 
   // Build live preview - include current highlight with saved ones
   // Filter out any empty or whitespace-only highlights
@@ -308,6 +406,8 @@ export default function Command() {
       allHighlights,
       metadata,
       article?.markdown,
+      aiSummary,
+      aiKeypoints,
     );
     return buildTanaPasteFromClip(clip, supertag);
   }, [
@@ -319,6 +419,8 @@ export default function Command() {
     metadata,
     article,
     renderedTemplate,
+    aiSummary,
+    aiKeypoints,
   ]);
 
   // Handle save to Tana
@@ -380,6 +482,29 @@ export default function Command() {
       // Build children (highlights + article content)
       const children: TanaChildNode[] = [];
 
+      // Add AI summary to fields if available
+      if (aiSummary) {
+        let summaryFieldName = "Summary";
+        if (supertagSchema) {
+          const summaryMapping = createSmartFieldMapping(
+            ["Summary"],
+            supertagSchema,
+          );
+          summaryFieldName = summaryMapping.fieldMap["Summary"] || "Summary";
+        }
+        // Strip newlines - Tana Paste fields must be single-line
+        fields[summaryFieldName] = aiSummary.replace(/\n/g, " ").trim();
+      }
+
+      // Add AI key points as structured child if available
+      if (aiKeypoints && aiKeypoints.length > 0) {
+        const keypointsNode: TanaChildNode = {
+          name: "Key Points",
+          children: aiKeypoints.map((point) => ({ name: point })),
+        };
+        children.push(keypointsNode);
+      }
+
       // Add highlights as children (clean newlines)
       for (const highlight of allHighlights) {
         const cleaned = highlight.replace(/\n/g, " ").trim();
@@ -389,12 +514,19 @@ export default function Command() {
       }
 
       // Add article content as children, nesting paragraphs under headlines
-      // Track total size to stay under 5000 char API limit
-      let totalChars = JSON.stringify(fields).length + title.length;
-      const MAX_PAYLOAD_SIZE = 4500; // Leave buffer for JSON overhead
+      // Only add full text if autoSaveFullText is enabled (or extractArticle was manually toggled)
+      const shouldSaveFullText =
+        preferences.autoSaveFullText || (extractArticle && !shouldAutoExtract);
+
+      // Track total size to stay under Tana Input API 5000 char limit
+      let totalChars =
+        JSON.stringify(fields).length +
+        title.length +
+        JSON.stringify(children).length;
+      const MAX_PAYLOAD_SIZE = 4800; // Leave buffer for JSON overhead (Tana API limit: 5000)
       let wasTruncated = false;
 
-      if (article?.markdown) {
+      if (article?.markdown && shouldSaveFullText) {
         // Split by lines first, then process
         const lines = article.markdown.split("\n");
         let currentHeadline: TanaChildNode | null = null;
@@ -407,35 +539,51 @@ export default function Command() {
           // Skip empty or whitespace-only content
           if (!text || text.length < 2) return;
 
-          if (totalChars + text.length > MAX_PAYLOAD_SIZE) {
-            wasTruncated = true;
-            return;
-          }
-
           if (currentHeadline) {
+            // When adding to a headline, check estimated size but don't increment totalChars yet
+            // (will be counted when headline is flushed to avoid double-counting)
+            const estimatedHeadlineSize =
+              currentHeadline.name.length +
+              (currentHeadline.children?.reduce(
+                (sum, c) => sum + c.name.length,
+                0,
+              ) || 0) +
+              text.length +
+              50; // JSON overhead estimate
+            if (totalChars + estimatedHeadlineSize > MAX_PAYLOAD_SIZE) {
+              wasTruncated = true;
+              return;
+            }
             currentHeadline.children = currentHeadline.children || [];
             currentHeadline.children.push({ name: text });
           } else {
+            // Top-level paragraph - check and count immediately
+            if (totalChars + text.length > MAX_PAYLOAD_SIZE) {
+              wasTruncated = true;
+              return;
+            }
             children.push({ name: text });
+            totalChars += text.length;
           }
-          totalChars += text.length;
         };
 
         const flushHeadline = () => {
           if (!currentHeadline) return;
           // Only add headline if it has children or is meaningful
           if (currentHeadline.children && currentHeadline.children.length > 0) {
-            if (
-              totalChars + JSON.stringify(currentHeadline).length >
-              MAX_PAYLOAD_SIZE
-            ) {
+            const headlineSize = JSON.stringify(currentHeadline).length;
+            if (totalChars + headlineSize > MAX_PAYLOAD_SIZE) {
               wasTruncated = true;
               return;
             }
             children.push(currentHeadline);
-            totalChars += currentHeadline.name.length;
+            totalChars += headlineSize;
           } else {
             // Headline without children - add as plain text
+            if (totalChars + currentHeadline.name.length > MAX_PAYLOAD_SIZE) {
+              wasTruncated = true;
+              return;
+            }
             children.push({ name: currentHeadline.name });
             totalChars += currentHeadline.name.length;
           }
@@ -544,9 +692,88 @@ export default function Command() {
     setHighlights(highlights.filter((_, i) => i !== index));
   }
 
+  // AI: Summarize article
+  async function handleSummarize() {
+    if (!aiProvider || !article?.markdown) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Cannot summarize",
+        message: "Extract article first and configure AI provider",
+      });
+      return;
+    }
+
+    setIsAiProcessing(true);
+    try {
+      const result = await aiProvider.process({
+        url,
+        title,
+        content: article.markdown,
+        operation: "summarize",
+      });
+
+      if (result.summary) {
+        setAiSummary(result.summary);
+        setDescription(result.summary);
+        await showToast({
+          style: Toast.Style.Success,
+          title: "Summary generated",
+        });
+      }
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Summarization failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  }
+
+  // AI: Extract key points
+  async function handleExtractKeypoints() {
+    if (!aiProvider || !article?.markdown) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Cannot extract key points",
+        message: "Extract article first and configure AI provider",
+      });
+      return;
+    }
+
+    setIsAiProcessing(true);
+    try {
+      const result = await aiProvider.process({
+        url,
+        title,
+        content: article.markdown,
+        operation: "extract-keypoints",
+      });
+
+      if (result.keypoints && result.keypoints.length > 0) {
+        setAiKeypoints(result.keypoints);
+        // Don't add to highlights - they'll be structured under "Key Points" node
+        await showToast({
+          style: Toast.Style.Success,
+          title: "Key points extracted",
+          message: `${result.keypoints.length} points`,
+        });
+      }
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Key point extraction failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  }
+
   return (
     <Form
-      isLoading={isLoading || isSaving || isExtracting}
+      isLoading={isLoading || isSaving || isExtracting || isAiProcessing}
       actions={
         <ActionPanel>
           <Action.SubmitForm
@@ -566,6 +793,22 @@ export default function Command() {
             shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
             onAction={handleCopyTanaPaste}
           />
+          {article && aiProvider && (
+            <>
+              <Action
+                title="Summarize with AI"
+                icon={Icon.Stars}
+                shortcut={{ modifiers: ["cmd", "shift"], key: "s" }}
+                onAction={handleSummarize}
+              />
+              <Action
+                title="Extract Key Points"
+                icon={Icon.BulletPoints}
+                shortcut={{ modifiers: ["cmd", "shift"], key: "k" }}
+                onAction={handleExtractKeypoints}
+              />
+            </>
+          )}
         </ActionPanel>
       }
     >
@@ -751,6 +994,8 @@ export default function Command() {
           text={`${article.readingTime} min read • ${article.length.toLocaleString()} characters${article.byline ? ` • ${article.byline}` : ""}`}
         />
       )}
+
+      {aiSummary && <Form.Description title="AI Summary" text={aiSummary} />}
     </Form>
   );
 }

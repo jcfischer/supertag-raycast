@@ -27,10 +27,99 @@
       "name": "clip-web",
       "title": "Clip Web Page to Tana",
       "description": "Clip the current browser tab to Tana with URL, title, and selection",
-      "mode": "view"
+      "mode": "view",
+      "preferences": [
+        {
+          "name": "aiProvider",
+          "type": "dropdown",
+          "required": false,
+          "title": "AI Provider",
+          "description": "AI provider for summarization and key point extraction",
+          "default": "disabled",
+          "data": [
+            {
+              "title": "Disabled",
+              "value": "disabled"
+            },
+            {
+              "title": "Claude (Anthropic)",
+              "value": "claude"
+            },
+            {
+              "title": "Ollama (Local)",
+              "value": "ollama"
+            }
+          ]
+        },
+        {
+          "name": "claudeApiKey",
+          "type": "password",
+          "required": false,
+          "title": "Claude API Key",
+          "description": "Anthropic API key (starts with sk-ant-)",
+          "placeholder": "sk-ant-..."
+        },
+        {
+          "name": "ollamaEndpoint",
+          "type": "textfield",
+          "required": false,
+          "title": "Ollama Endpoint",
+          "description": "Ollama API endpoint",
+          "default": "http://localhost:11434",
+          "placeholder": "http://localhost:11434"
+        },
+        {
+          "name": "ollamaModel",
+          "type": "dropdown",
+          "required": false,
+          "title": "Ollama Model",
+          "description": "Model to use for AI features (must be installed locally)",
+          "default": "llama3.2",
+          "data": [
+            { "title": "Llama 3.2 (Default)", "value": "llama3.2" },
+            { "title": "Llama 3.2 1B", "value": "llama3.2:1b" },
+            { "title": "Llama 3.2 3B", "value": "llama3.2:3b" },
+            { "title": "Llama 3.1 8B", "value": "llama3.1:8b" },
+            { "title": "Llama 3.1 70B", "value": "llama3.1:70b" },
+            { "title": "Mistral 7B", "value": "mistral" },
+            { "title": "Mixtral 8x7B", "value": "mixtral" },
+            { "title": "Gemma 2 9B", "value": "gemma2:9b" },
+            { "title": "Gemma 2 27B", "value": "gemma2:27b" },
+            { "title": "Qwen 2.5 7B", "value": "qwen2.5:7b" },
+            { "title": "Phi-3 Mini", "value": "phi3" },
+            { "title": "CodeLlama 7B", "value": "codellama:7b" }
+          ]
+        },
+        {
+          "name": "autoSummarize",
+          "type": "checkbox",
+          "required": false,
+          "title": "Auto Features",
+          "description": "Automatically generate summary when extracting article",
+          "default": false,
+          "label": "Auto-summarize articles"
+        },
+        {
+          "name": "autoExtractKeypoints",
+          "type": "checkbox",
+          "required": false,
+          "description": "Automatically extract key points when extracting article",
+          "default": false,
+          "label": "Auto-extract key points"
+        },
+        {
+          "name": "autoSaveFullText",
+          "type": "checkbox",
+          "required": false,
+          "description": "Save full article text to Tana (otherwise only AI summary/keypoints are saved)",
+          "default": true,
+          "label": "Save full article text"
+        }
+      ]
     }
   ],
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@mozilla/readability": "^0.6.0",
     "@raycast/api": "^1.92.1",
     "@raycast/utils": "^1.19.1",

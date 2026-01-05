@@ -157,3 +157,18 @@ export {
   getTemplateFieldNames,
   type SmartFieldMapping,
 } from "./field-mapper-smart";
+
+// AI providers
+export {
+  type AIProvider,
+  type AIRequest,
+  type AIResult,
+  type AIOptions,
+  type OllamaModel,
+  AIProviderError,
+  createAIProvider,
+  ClaudeProvider,
+  OllamaProvider,
+  DisabledProvider,
+  fetchOllamaModels,
+} from "./ai";
