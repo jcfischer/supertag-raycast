@@ -51,14 +51,26 @@ const FIELD_ALIASES: Record<string, string[]> = {
   Description: [
     "Description",
     "description",
-    "Summary",
-    "summary",
     "Excerpt",
     "excerpt",
     "About",
     "about",
     "Overview",
     "overview",
+  ],
+
+  // Summary variations (for AI-generated summaries)
+  Summary: [
+    "Summary",
+    "summary",
+    "Abstract",
+    "abstract",
+    "Synopsis",
+    "synopsis",
+    "TL;DR",
+    "tldr",
+    "Description",
+    "description",
   ],
 
   // Title variations

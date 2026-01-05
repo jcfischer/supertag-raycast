@@ -421,17 +421,18 @@ export default function Command() {
       // Build children (highlights + article content)
       const children: TanaChildNode[] = [];
 
-      // Add AI summary to fields if available and supertag has summary field
-      if (aiSummary && supertagSchema) {
-        const summaryMapping = createSmartFieldMapping(
-          ["Summary"],
-          supertagSchema,
-        );
-        const summaryFieldName = summaryMapping.fieldMap["Summary"];
-        if (summaryFieldName) {
-          // Strip newlines - Tana Paste fields must be single-line
-          fields[summaryFieldName] = aiSummary.replace(/\n/g, " ").trim();
+      // Add AI summary to fields if available
+      if (aiSummary) {
+        let summaryFieldName = "Summary";
+        if (supertagSchema) {
+          const summaryMapping = createSmartFieldMapping(
+            ["Summary"],
+            supertagSchema,
+          );
+          summaryFieldName = summaryMapping.fieldMap["Summary"] || "Summary";
         }
+        // Strip newlines - Tana Paste fields must be single-line
+        fields[summaryFieldName] = aiSummary.replace(/\n/g, " ").trim();
       }
 
       // Add AI key points as structured child if available
