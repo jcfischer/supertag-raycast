@@ -8,9 +8,11 @@ import { describe, it, expect, mock } from "bun:test";
 import type { ExecaError } from "execa";
 
 // Mock execa before importing cli
-const mockExeca = mock((path: string, args: string[], options?: any) => {
-  return Promise.resolve({ stdout: "", stderr: "", exitCode: 0 });
-});
+const mockExeca = mock(
+  (_path: string, _args: string[], _options?: Record<string, unknown>) => {
+    return Promise.resolve({ stdout: "", stderr: "", exitCode: 0 });
+  },
+);
 
 mock.module("execa", () => ({
   execa: mockExeca,
@@ -26,7 +28,6 @@ import {
   extractSupertagFromFieldName,
   type SupertagInfo,
   type SupertagSchema,
-  type FieldOption,
 } from "../cli";
 
 describe("listSupertags", () => {

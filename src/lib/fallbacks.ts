@@ -42,11 +42,12 @@ export async function showErrorWithFallback(
  */
 export async function executeFallback(fallback: Fallback): Promise<void> {
   switch (fallback.action) {
-    case "terminal":
+    case "terminal": {
       // Open Terminal with k command
       const command = fallback.data || "k";
       await open(`terminal://run?command=${encodeURIComponent(command)}`);
       break;
+    }
 
     case "clipboard":
       if (fallback.data) {

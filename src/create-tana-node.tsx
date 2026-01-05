@@ -9,7 +9,7 @@ import {
   Icon,
   useNavigation,
 } from "@raycast/api";
-import { useState, useEffect, useRef, memo, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   listSupertags,
   getSupertag,
@@ -22,26 +22,6 @@ import {
   type FieldOption,
 } from "./lib/cli";
 import { SchemaCache } from "./lib/schema-cache";
-
-/**
- * Map field data type to Raycast form component type
- */
-function getFieldIcon(dataType: string): Icon {
-  switch (dataType) {
-    case "date":
-      return Icon.Calendar;
-    case "reference":
-      return Icon.Link;
-    case "options":
-      return Icon.List;
-    case "checkbox":
-      return Icon.Checkmark;
-    case "number":
-      return Icon.Hashtag;
-    default:
-      return Icon.Text;
-  }
-}
 
 /**
  * First screen: Simple name input
@@ -77,7 +57,7 @@ function NameInputForm({ supertag }: { supertag: SupertagInfo }) {
             fieldLabelId: f.attributeId,
             originTagName: f.originTagName || cachedSchema.name,
             depth: f.depth ?? 0,
-            inferredDataType: f.dataType as any,
+            inferredDataType: f.dataType as SupertagField["inferredDataType"],
             targetSupertagId: f.targetSupertag?.id,
             targetSupertagName: f.targetSupertag?.name,
           })),

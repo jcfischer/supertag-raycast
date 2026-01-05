@@ -1,14 +1,14 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, mock } from "bun:test";
 import {
   getActiveTab,
   getSelection,
   getSupportedBrowsers,
   detectFrontmostBrowser,
-  type BrowserName,
 } from "../../web-clipper/browser";
 
 // Mock execa for testing without actual AppleScript execution
-const mockExeca = mock(() => Promise.resolve({ stdout: "", exitCode: 0 }));
+const _mockExeca = mock(() => Promise.resolve({ stdout: "", exitCode: 0 }));
+void _mockExeca; // Reserved for future AppleScript mocking tests
 
 describe("Browser service", () => {
   describe("getSupportedBrowsers", () => {

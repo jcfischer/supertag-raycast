@@ -1,4 +1,4 @@
-import type { WebClip, Highlight } from "./types";
+import type { WebClip } from "./types";
 
 /**
  * Options for building Tana Paste

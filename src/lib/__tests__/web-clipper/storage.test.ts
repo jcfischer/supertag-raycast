@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import {
   WebClipStorage,
-  STORAGE_KEYS,
   type StorageInterface,
 } from "../../web-clipper/storage";
 import type {

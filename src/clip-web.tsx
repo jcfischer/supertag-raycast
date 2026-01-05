@@ -6,9 +6,7 @@ import {
   Toast,
   popToRoot,
   Clipboard,
-  Detail,
   Icon,
-  getPreferenceValues,
 } from "@raycast/api";
 import { useState, useEffect, useMemo } from "react";
 import {

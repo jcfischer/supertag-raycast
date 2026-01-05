@@ -4,7 +4,6 @@ import {
   extractDomain,
   fetchMetadata,
 } from "../../web-clipper/content";
-import type { OpenGraphMeta } from "../../web-clipper/types";
 
 describe("Content service", () => {
   describe("extractDomain", () => {

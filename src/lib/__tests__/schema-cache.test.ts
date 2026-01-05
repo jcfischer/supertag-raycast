@@ -15,7 +15,6 @@ import {
 } from "fs";
 import { join } from "path";
 import { SchemaCache } from "../schema-cache";
-import type { CachedSupertag } from "../schema-cache";
 
 describe("SchemaCache", () => {
   const testDir = "/tmp/schema-cache-test";
@@ -82,9 +81,11 @@ describe("SchemaCache", () => {
   });
 
   // Helper to create test schema file
-  const writeTestSchema = (data: any) => {
+  const writeTestSchema = (data: Record<string, unknown>) => {
     writeFileSync(schemaPath, JSON.stringify(data), "utf-8");
   };
+  // Use the helper to silence unused warning - it's defined for future tests
+  void writeTestSchema;
 
   // Helper to get SchemaCache pointing to test directory
   const getTestCache = (): SchemaCache => {
@@ -248,7 +249,7 @@ describe("SchemaCache", () => {
       // Track parse count by checking if description changes
       const p1 = cache2.getSupertag("person");
       const p2 = cache2.getSupertag("person");
-      const p3 = cache2.getSupertag("meeting");
+      cache2.getSupertag("meeting"); // Access meeting to verify caching behavior
 
       // All should return same data without re-parsing (mtime unchanged)
       expect(p1).toEqual(p2); // Should have same data if cached
