@@ -5,7 +5,7 @@ All notable changes to KAI Raycast integration are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-01-05
 
 ### Added
 
@@ -86,3 +86,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Company Field Dropdown** - Company field dropdown now populates correctly
   - Previously empty due to field name mismatch (Company vs company)
   - Now reads actual target supertag from Tana field definition
+
+- **Progressive Field Option Loading** - Form renders immediately with options loading in background
+  - Converted blocking `execSync` CLI calls to async `execa` for non-blocking UI
+  - Form shows instantly with spinner and "Loading X fields..." indicator
+  - Each field's options populate progressively as they arrive
+  - Inline loading indicator next to name prevents layout jumping
+
+- **Custom Field Option Sources** - Special handling for fields with non-standard option sources
+  - Status field: loads options from search node children (Ck2HIlIhGgwt)
+  - Focus field: loads options from search node children (VSvlS-wJtJJY)
+  - Parent field: loads options from multiple supertags (project, objective, note, todo, recurring task)
+  - Configurable via `FIELD_OPTION_SOURCES` mapping in cli.ts
+
+- **Schema Cache Data Type Mismatch** - Fixed incorrect field types from cache
+  - Schema cache had `dataType: "text"` for reference/option fields
+  - Now loads schema from CLI which returns correct `inferredDataType`
+  - Fixes dropdown fields appearing as empty text fields
+
+- **Corrupted Option Values Filtering** - Filters out corrupted historical data
+  - Removes `[object Object]` values from previous serialization bugs
+  - Filters node IDs accidentally stored as text values
+  - Uses regex pattern to detect and skip corrupted entries

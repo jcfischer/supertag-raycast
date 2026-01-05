@@ -331,11 +331,20 @@ export async function getFieldOptions(
           valueNodeId: string;
           valueText: string;
         }>;
-        // Extract unique options by ID
+        // Extract unique options by ID, filtering out corrupted values
         const seen = new Set<string>();
         const unique: FieldOption[] = [];
+        // Pattern to detect node IDs (12 char alphanumeric with possible - and _)
+        const nodeIdPattern = /^[A-Za-z0-9_-]{10,14}$/;
         for (const v of values) {
           if (v.valueNodeId && v.valueText && !seen.has(v.valueNodeId)) {
+            // Skip corrupted values from previous bugs
+            if (
+              v.valueText === "[object Object]" ||
+              nodeIdPattern.test(v.valueText)
+            ) {
+              continue;
+            }
             seen.add(v.valueNodeId);
             unique.push({ id: v.valueNodeId, text: v.valueText });
           }
@@ -358,54 +367,65 @@ export async function getFieldOptions(
 /**
  * Get nodes with a specific supertag (for "options from supertag" fields)
  * Uses lowercase tag name for case-insensitive matching
+ * Async version - doesn't block event loop
  */
 export async function getNodesBySupertag(
   tagName: string,
-  limit = 200,
+  limit = 100,
 ): Promise<CLIResponse<FieldOption[]>> {
   try {
     // Use lowercase for case-insensitive tag matching
     const normalizedTagName = tagName.toLowerCase();
-    const { stdout, exitCode, stderr } = await execa(
+    const PATH_ENV = `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`;
+
+    const { stdout, stderr, exitCode } = await execa(
       SUPERTAG_PATH,
-      [
-        "search",
-        "--tag",
-        normalizedTagName,
-        "--include-descendants",
-        "--json",
-        "--limit",
-        String(limit),
-        "--select",
-        "id,name",
-      ],
+      ["search", "--tag", normalizedTagName, "--include-descendants", "--json", "--limit", String(limit), "--select", "id,name"],
       {
-        timeout: 10000,
+        timeout: 30000,
         reject: false,
-        maxBuffer: 10 * 1024 * 1024, // 10MB buffer to handle large result sets
-        env: {
-          ...process.env,
-          PATH: `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`,
-        },
+        env: { ...process.env, PATH: PATH_ENV },
+        maxBuffer: 50 * 1024 * 1024,
       },
     );
 
-    if (exitCode === 0 && stdout) {
+    if (exitCode !== 0) {
+      return {
+        success: false,
+        error: `Command failed (exit ${exitCode}): ${stderr || stdout}`,
+      };
+    }
+
+    if (stdout) {
       try {
-        const nodes = JSON.parse(stdout) as Array<{ id: string; name: string }>;
+        const nodes = JSON.parse(stdout) as Array<{
+          id: string;
+          name: string;
+        }>;
         const options: FieldOption[] = nodes.map((n) => ({
           id: n.id,
           text: n.name,
         }));
         return { success: true, data: options };
-      } catch {
-        return { success: false, error: "Failed to parse nodes" };
+      } catch (parseError) {
+        const errMsg =
+          parseError instanceof Error
+            ? parseError.message
+            : String(parseError);
+        return {
+          success: false,
+          error: `Parse error: ${errMsg} | stdout length: ${stdout.length} | first 200 chars: ${stdout.substring(0, 200)}`,
+        };
       }
     }
 
-    return { success: false, error: `Failed to get nodes (exit ${exitCode})` };
+    return { success: false, error: "No output from command" };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    const err = error as Error & { status?: number; stderr?: string };
+    return {
+      success: false,
+      error: `Command failed: ${err.message}${err.stderr ? ` stderr: ${err.stderr}` : ""}`,
+    };
   }
 }
 
@@ -418,3 +438,81 @@ export function extractSupertagFromFieldName(fieldName: string): string | null {
   const cleaned = fieldName.replace(/^[^\w]+/, "").trim();
   return cleaned || null;
 }
+
+/**
+ * Get children of a specific node (for fields that get options from a node's children)
+ * Async version - doesn't block event loop
+ */
+export async function getNodeChildren(
+  nodeId: string,
+  limit = 100,
+): Promise<CLIResponse<FieldOption[]>> {
+  try {
+    const PATH_ENV = `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`;
+
+    const { stdout, stderr, exitCode } = await execa(
+      SUPERTAG_PATH,
+      ["nodes", "show", nodeId, "--json"],
+      {
+        timeout: 30000,
+        reject: false,
+        env: { ...process.env, PATH: PATH_ENV },
+        maxBuffer: 50 * 1024 * 1024,
+      },
+    );
+
+    if (exitCode !== 0) {
+      return {
+        success: false,
+        error: `Command failed (exit ${exitCode}): ${stderr || stdout}`,
+      };
+    }
+
+    if (stdout) {
+      try {
+        const node = JSON.parse(stdout) as {
+          children?: Array<{ id: string; name: string }>;
+        };
+        const children = (node.children || []).slice(0, limit);
+        const options: FieldOption[] = children.map((c) => ({
+          id: c.id,
+          text: c.name,
+        }));
+        return { success: true, data: options };
+      } catch {
+        return { success: false, error: "Failed to parse node" };
+      }
+    }
+
+    return { success: false, error: "No output from command" };
+  } catch (error) {
+    const err = error as Error & { status?: number; stderr?: string };
+    return {
+      success: false,
+      error: `Command failed: ${err.message}${err.stderr ? ` stderr: ${err.stderr}` : ""}`,
+    };
+  }
+}
+
+/**
+ * Field option source configuration
+ * Maps field names to their option source (node ID or supertag names)
+ */
+export interface FieldOptionSource {
+  type: "node" | "supertags";
+  nodeId?: string;
+  supertags?: string[];
+}
+
+/**
+ * Known field option sources for the todo supertag
+ * These are fields where the standard lookup doesn't work correctly
+ */
+export const FIELD_OPTION_SOURCES: Record<string, FieldOptionSource> = {
+  "⚙️ Status": { type: "node", nodeId: "Ck2HIlIhGgwt" },
+  "⚙️ Focus": { type: "node", nodeId: "VSvlS-wJtJJY" },
+  Parent: {
+    type: "supertags",
+    supertags: ["project", "objective", "note", "todo", "recurring task"],
+  },
+};

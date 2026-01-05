@@ -16,6 +16,8 @@ import {
   createTanaNode,
   getFieldOptions,
   getNodesBySupertag,
+  getNodeChildren,
+  FIELD_OPTION_SOURCES,
   type SupertagInfo,
   type SupertagSchema,
   type SupertagField,
@@ -24,96 +26,46 @@ import {
 import { SchemaCache } from "./lib/schema-cache";
 
 /**
+ * Get schema from cache or CLI (fast operation)
+ */
+function getSchemaSync(tagName: string): SupertagSchema | null {
+  const cache = new SchemaCache();
+  const cachedSchema = cache.getSupertag(tagName);
+
+  if (cachedSchema) {
+    return {
+      tagId: cachedSchema.id,
+      tagName: cachedSchema.name,
+      fields: cachedSchema.fields.map((f) => ({
+        fieldName: f.name,
+        fieldLabelId: f.attributeId,
+        originTagName: f.originTagName || cachedSchema.name,
+        depth: f.depth ?? 0,
+        inferredDataType: f.dataType as SupertagField["inferredDataType"],
+        targetSupertagId: f.targetSupertag?.id,
+        targetSupertagName: f.targetSupertag?.name,
+      })),
+    };
+  }
+  return null;
+}
+
+/**
  * First screen: Simple name input
- * Loads schema/options in background while user types
+ * Preloads schema (fast) while user types so form renders instantly
  */
 function NameInputForm({ supertag }: { supertag: SupertagInfo }) {
   const [name, setName] = useState("");
+  const [schema, setSchema] = useState<SupertagSchema | null>(null);
   const { push } = useNavigation();
 
-  // Pre-load schema and options in background
-  const [preloadedData, setPreloadedData] = useState<{
-    schema: SupertagSchema | null;
-    fieldOptions: Record<string, FieldOption[]>;
-  }>({ schema: null, fieldOptions: {} });
-
+  // Always load from CLI - cache has incorrect data types
   useEffect(() => {
-    async function preloadSchema() {
-      // Load schema in background while user types
-      const cache = new SchemaCache();
-      const cachedSchema = cache.getSupertag(supertag.tagName);
-
-      let schemaData: SupertagSchema | null = null;
-
-      if (cachedSchema) {
-        if (process.env.NODE_ENV === "development") {
-          console.log("[SchemaCache] Cache HIT:", supertag.tagName);
-        }
-        schemaData = {
-          tagId: cachedSchema.id,
-          tagName: cachedSchema.name,
-          fields: cachedSchema.fields.map((f) => ({
-            fieldName: f.name,
-            fieldLabelId: f.attributeId,
-            originTagName: f.originTagName || cachedSchema.name,
-            depth: f.depth ?? 0,
-            inferredDataType: f.dataType as SupertagField["inferredDataType"],
-            targetSupertagId: f.targetSupertag?.id,
-            targetSupertagName: f.targetSupertag?.name,
-          })),
-        };
-      } else {
-        if (process.env.NODE_ENV === "development") {
-          console.log("[SchemaCache] Cache MISS, using CLI:", supertag.tagName);
-        }
-        const result = await getSupertag(supertag.tagName);
-        if (result.success && result.data) {
-          schemaData = result.data;
-        }
+    getSupertag(supertag.tagName).then((result) => {
+      if (result.success && result.data) {
+        setSchema(result.data);
       }
-
-      if (schemaData) {
-        // Load options for reference/options fields
-        const optionsFields = schemaData.fields.filter(
-          (f) =>
-            f.inferredDataType === "options" ||
-            f.inferredDataType === "reference",
-        );
-        const optionsPromises = optionsFields.map(async (field) => {
-          // For "options" fields, always use historical field values
-          // (even if targetSupertag is set - that's just metadata about valid values)
-          if (field.inferredDataType === "options") {
-            const optResult = await getFieldOptions(field.fieldName);
-            return {
-              fieldName: field.fieldName,
-              options: optResult.data || [],
-            };
-          }
-          // For "reference" fields with targetSupertag, fetch nodes by supertag
-          if (
-            field.inferredDataType === "reference" &&
-            field.targetSupertagName
-          ) {
-            const optResult = await getNodesBySupertag(
-              field.targetSupertagName,
-            );
-            return {
-              fieldName: field.fieldName,
-              options: optResult.data || [],
-            };
-          }
-          return { fieldName: field.fieldName, options: [] };
-        });
-        const optionsResults = await Promise.all(optionsPromises);
-        const optionsMap: Record<string, FieldOption[]> = {};
-        for (const { fieldName, options } of optionsResults) {
-          optionsMap[fieldName] = options;
-        }
-
-        setPreloadedData({ schema: schemaData, fieldOptions: optionsMap });
-      }
-    }
-    preloadSchema();
+    });
   }, [supertag.tagName]);
 
   const handleSubmit = () => {
@@ -126,19 +78,20 @@ function NameInputForm({ supertag }: { supertag: SupertagInfo }) {
       return;
     }
 
-    // Navigate to full form with preloaded data
+    // Navigate to full form with preloaded schema
+    // FullNodeForm will show its own loading indicators
     push(
       <FullNodeForm
         supertag={supertag}
         initialName={name}
-        preloadedSchema={preloadedData.schema}
-        preloadedOptions={preloadedData.fieldOptions}
+        preloadedSchema={schema}
       />,
     );
   };
 
   return (
     <Form
+      isLoading={!schema}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Continue" onSubmit={handleSubmit} />
@@ -153,38 +106,137 @@ function NameInputForm({ supertag }: { supertag: SupertagInfo }) {
         onChange={setName}
         autoFocus
       />
-      <Form.Description
-        title="Loading"
-        text={
-          preloadedData.schema
-            ? "✓ Schema loaded"
-            : "Loading schema in background..."
-        }
-      />
+      {!schema && <Form.Description text="Loading field definitions..." />}
     </Form>
   );
 }
 
 /**
- * Second screen: Full form with all fields pre-rendered
- * No dynamic field insertion - everything is ready from the start
+ * Load options for a single field
+ */
+async function loadFieldOptions(
+  field: SupertagField,
+): Promise<{ fieldName: string; options: FieldOption[] }> {
+  // Check if this field has a custom option source
+  const customSource = FIELD_OPTION_SOURCES[field.fieldName];
+
+  if (customSource) {
+    if (customSource.type === "node" && customSource.nodeId) {
+      const optResult = await getNodeChildren(customSource.nodeId);
+      return { fieldName: field.fieldName, options: optResult.data || [] };
+    }
+    if (customSource.type === "supertags" && customSource.supertags) {
+      const tagResults = await Promise.all(
+        customSource.supertags.map((tag) => getNodesBySupertag(tag, 50)),
+      );
+      const allOptions: FieldOption[] = [];
+      for (const optResult of tagResults) {
+        if (optResult.data) {
+          allOptions.push(...optResult.data);
+        }
+      }
+      const seen = new Set<string>();
+      const unique = allOptions.filter((opt) => {
+        if (seen.has(opt.id)) return false;
+        seen.add(opt.id);
+        return true;
+      });
+      return { fieldName: field.fieldName, options: unique };
+    }
+  }
+
+  if (field.inferredDataType === "options") {
+    const optResult = await getFieldOptions(field.fieldName);
+    return { fieldName: field.fieldName, options: optResult.data || [] };
+  }
+
+  if (field.inferredDataType === "reference" && field.targetSupertagName) {
+    const optResult = await getNodesBySupertag(field.targetSupertagName);
+    return { fieldName: field.fieldName, options: optResult.data || [] };
+  }
+
+  return { fieldName: field.fieldName, options: [] };
+}
+
+/**
+ * Second screen: Full form that loads data lazily
+ * Schema is preloaded from NameInputForm for instant rendering
  */
 function FullNodeForm({
   supertag,
   initialName,
   preloadedSchema,
-  preloadedOptions,
 }: {
   supertag: SupertagInfo;
   initialName: string;
   preloadedSchema: SupertagSchema | null;
-  preloadedOptions: Record<string, FieldOption[]>;
 }) {
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [schema, setSchema] = useState<SupertagSchema | null>(preloadedSchema);
+  const [fieldOptions, setFieldOptions] = useState<
+    Record<string, FieldOption[]>
+  >({});
+  // Initialize loading fields synchronously from preloaded schema
+  const [loadingFields, setLoadingFields] = useState<Set<string>>(() => {
+    if (preloadedSchema) {
+      const optionsFields = preloadedSchema.fields.filter(
+        (f) =>
+          (f.inferredDataType === "options" ||
+            f.inferredDataType === "reference") &&
+          f.depth <= 2,
+      );
+      return new Set(optionsFields.map((f) => f.fieldName));
+    }
+    return new Set();
+  });
 
-  // Compute visible fields immediately from preloaded schema (no dynamic insertion)
-  const visibleFields = preloadedSchema
-    ? preloadedSchema.fields.filter((f) => f.depth <= 2)
+  // Load schema if not preloaded, then load field options
+  useEffect(() => {
+    async function init() {
+      let schemaData = schema;
+
+      // If schema wasn't preloaded, load it now
+      if (!schemaData) {
+        schemaData = getSchemaSync(supertag.tagName);
+        if (!schemaData) {
+          const result = await getSupertag(supertag.tagName);
+          if (result.success && result.data) {
+            schemaData = result.data;
+          }
+        }
+        setSchema(schemaData);
+      }
+
+      // Start loading options for all option/reference fields
+      if (schemaData) {
+        const optionsFields = schemaData.fields.filter(
+          (f) =>
+            (f.inferredDataType === "options" ||
+              f.inferredDataType === "reference") &&
+            f.depth <= 2,
+        );
+
+        // Mark all as loading
+        setLoadingFields(new Set(optionsFields.map((f) => f.fieldName)));
+
+        // Load each field's options independently (they update as they arrive)
+        for (const field of optionsFields) {
+          loadFieldOptions(field).then(({ fieldName, options }) => {
+            setFieldOptions((prev) => ({ ...prev, [fieldName]: options }));
+            setLoadingFields((prev) => {
+              const next = new Set(prev);
+              next.delete(fieldName);
+              return next;
+            });
+          });
+        }
+      }
+    }
+    init();
+  }, [supertag.tagName, schema]);
+
+  const visibleFields = schema
+    ? schema.fields.filter((f) => f.depth <= 2)
     : [];
 
   async function handleSubmit() {
@@ -193,17 +245,14 @@ function FullNodeForm({
       title: "Creating node...",
     });
 
-    // Build field values - supertag-cli now handles creating tagged nodes for reference fields
     const fields: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(fieldValues)) {
       if (!value.trim()) continue;
 
-      // Check if this is a "create new" value from the text field
       if (value.startsWith("NEW:")) {
         const newName = value.substring(4).trim();
         if (newName) {
-          // Pass the name directly - supertag-cli will create a tagged node
           fields[key] = newName;
         }
       } else {
@@ -229,15 +278,21 @@ function FullNodeForm({
     }
   }
 
+  const loadingCount = loadingFields.size;
+
   return (
     <Form
+      isLoading={!schema || loadingCount > 0}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Create Node" onSubmit={handleSubmit} />
         </ActionPanel>
       }
     >
-      <Form.Description title="Name" text={initialName} />
+      <Form.Description
+        title="Name"
+        text={loadingCount > 0 ? `${initialName}  ·  Loading ${loadingCount} fields...` : initialName}
+      />
 
       <Form.Separator />
 
@@ -246,7 +301,8 @@ function FullNodeForm({
           key={field.fieldLabelId}
           field={field}
           value={fieldValues[field.fieldName] || ""}
-          options={preloadedOptions[field.fieldName]}
+          options={fieldOptions[field.fieldName]}
+          isLoading={loadingFields.has(field.fieldName)}
           onChange={(value) =>
             setFieldValues((prev) => ({ ...prev, [field.fieldName]: value }))
           }
@@ -264,22 +320,23 @@ function FieldInput({
   field,
   value,
   options,
+  isLoading,
   onChange,
   autoFocus = false,
 }: {
   field: SupertagField;
   value: string;
   options?: FieldOption[];
+  isLoading?: boolean;
   onChange: (value: string) => void;
   autoFocus?: boolean;
 }) {
-  const title = field.fieldName;
+  const title = isLoading ? `${field.fieldName} (loading...)` : field.fieldName;
   const placeholder =
     field.originTagName !== field.fieldName
       ? `From ${field.originTagName}`
       : undefined;
 
-  // Format date in local timezone (not UTC) to avoid off-by-one errors
   const formatDateLocal = (date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -311,10 +368,7 @@ function FieldInput({
 
     case "options":
     case "reference":
-      // For reference fields, allow creating new nodes by typing a name
       if (field.inferredDataType === "reference") {
-        // Show dropdown with existing options AND a text field to create new
-        // Value format: if starts with "NEW:", it's a new name to create; otherwise it's an existing ID
         const isNewValue = value.startsWith("NEW:");
         const dropdownValue = isNewValue ? "" : value;
         const textValue = isNewValue ? value.substring(4) : "";
@@ -325,11 +379,15 @@ function FieldInput({
               id={field.fieldLabelId}
               title={title}
               value={dropdownValue}
-              onChange={(newValue) => onChange(newValue)} // Clear "NEW:" prefix when dropdown selected
+              onChange={(newValue) => onChange(newValue)}
             >
               <Form.Dropdown.Item
                 value=""
-                title="(select existing or create new below)"
+                title={
+                  isLoading
+                    ? "Loading options..."
+                    : "(select existing or create new below)"
+                }
               />
               {options?.map((opt) => (
                 <Form.Dropdown.Item
@@ -350,7 +408,6 @@ function FieldInput({
         );
       }
 
-      // For options fields, show dropdown (no "create new" option)
       if (options && options.length > 0) {
         return (
           <Form.Dropdown
@@ -359,7 +416,10 @@ function FieldInput({
             value={value}
             onChange={onChange}
           >
-            <Form.Dropdown.Item value="" title="(none)" />
+            <Form.Dropdown.Item
+              value=""
+              title={isLoading ? "Loading options..." : "(none)"}
+            />
             {options.map((opt) => (
               <Form.Dropdown.Item
                 key={opt.id}
@@ -371,7 +431,15 @@ function FieldInput({
         );
       }
 
-      // Fallback to text field when no options available
+      // Show loading or fallback to text field
+      if (isLoading) {
+        return (
+          <Form.Dropdown id={field.fieldLabelId} title={title} value="">
+            <Form.Dropdown.Item value="" title="Loading options..." />
+          </Form.Dropdown>
+        );
+      }
+
       return (
         <Form.TextField
           id={field.fieldLabelId}
@@ -409,7 +477,6 @@ export default function Command() {
     async function load() {
       const result = await listSupertags(200);
       if (result.success && result.data) {
-        // Already sorted by usage from tags top
         setSupertags(result.data);
       } else {
         setError(result.error || "Failed to load supertags");
