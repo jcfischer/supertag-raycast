@@ -4,7 +4,6 @@ import {
   extractDomain,
   fetchMetadata,
 } from "../../web-clipper/content";
-import type { OpenGraphMeta } from "../../web-clipper/types";
 
 describe("Content service", () => {
   describe("extractDomain", () => {
@@ -17,7 +16,9 @@ describe("Content service", () => {
     });
 
     it("should handle subdomains", () => {
-      expect(extractDomain("https://blog.example.com/path")).toBe("blog.example.com");
+      expect(extractDomain("https://blog.example.com/path")).toBe(
+        "blog.example.com",
+      );
     });
 
     it("should handle URLs with ports", () => {

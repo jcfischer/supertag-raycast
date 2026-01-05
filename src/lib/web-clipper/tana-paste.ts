@@ -1,4 +1,4 @@
-import type { WebClip, Highlight } from "./types";
+import type { WebClip } from "./types";
 
 /**
  * Options for building Tana Paste
@@ -57,7 +57,10 @@ export function buildTanaPaste(options: TanaPasteOptions): string {
 /**
  * Build Tana Paste from a WebClip object
  */
-export function buildTanaPasteFromClip(clip: WebClip, supertag: string): string {
+export function buildTanaPasteFromClip(
+  clip: WebClip,
+  supertag: string,
+): string {
   const lines: string[] = ["%%tana%%"];
 
   // Main node with title and supertag

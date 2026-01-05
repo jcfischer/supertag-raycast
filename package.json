@@ -5,8 +5,11 @@
   "description": "Quick access to Tana via supertag-cli - capture nodes and create structured content",
   "icon": "extension-icon.png",
   "author": "fischer",
-  "categories": ["Productivity"],
+  "categories": [
+    "Productivity"
+  ],
   "license": "MIT",
+  "version": "0.2.0",
   "commands": [
     {
       "name": "capture-tana",
@@ -37,7 +40,7 @@
     "@raycast/eslint-config": "^1.0.11",
     "@types/node": "22.10.2",
     "@types/react": "18.3.18",
-    "eslint": "^9.17.0",
+    "eslint": "^8.57.1",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2"
   },

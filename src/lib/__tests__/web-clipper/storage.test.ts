@@ -1,10 +1,14 @@
-import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import {
   WebClipStorage,
-  STORAGE_KEYS,
   type StorageInterface,
 } from "../../web-clipper/storage";
-import type { ClipTemplate, DomainPreference, AIConfig, WebClip } from "../../web-clipper/types";
+import type {
+  ClipTemplate,
+  DomainPreference,
+  AIConfig,
+  WebClip,
+} from "../../web-clipper/types";
 
 // Mock storage for testing
 function createMockStorage(): StorageInterface {
@@ -49,7 +53,9 @@ describe("WebClipStorage", () => {
       const updated = { ...testTemplate, name: "Updated Template" };
       await storage.saveTemplate(updated);
       const templates = await storage.getTemplates();
-      expect(templates.find((t) => t.id === testTemplate.id)?.name).toBe("Updated Template");
+      expect(templates.find((t) => t.id === testTemplate.id)?.name).toBe(
+        "Updated Template",
+      );
     });
 
     it("should delete template", async () => {

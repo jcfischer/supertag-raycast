@@ -4,21 +4,28 @@ import type { BrowserTab } from "./types";
 /**
  * Supported browser names
  */
-export type BrowserName = "Safari" | "Google Chrome" | "Arc" | "Firefox" | "Zen" | "Brave Browser";
+export type BrowserName =
+  | "Safari"
+  | "Google Chrome"
+  | "Arc"
+  | "Firefox"
+  | "Zen"
+  | "Brave Browser";
 
 /**
  * AppleScript templates for each browser
  */
-const BROWSER_SCRIPTS: Record<BrowserName, { tab: string; selection: string }> = {
-  Safari: {
-    tab: `
+const BROWSER_SCRIPTS: Record<BrowserName, { tab: string; selection: string }> =
+  {
+    Safari: {
+      tab: `
       tell application "Safari"
         set theURL to URL of current tab of front window
         set theTitle to name of current tab of front window
         return theURL & "\n" & theTitle
       end tell
     `,
-    selection: `
+      selection: `
       tell application "Safari"
         try
           -- This requires "Allow JavaScript from Apple Events" in Safari's Develop menu
@@ -33,41 +40,41 @@ const BROWSER_SCRIPTS: Record<BrowserName, { tab: string; selection: string }> =
         end try
       end tell
     `,
-  },
-  "Google Chrome": {
-    tab: `
+    },
+    "Google Chrome": {
+      tab: `
       tell application "Google Chrome"
         set theURL to URL of active tab of front window
         set theTitle to title of active tab of front window
         return theURL & "\n" & theTitle
       end tell
     `,
-    selection: `
+      selection: `
       tell application "Google Chrome"
         set theSelection to execute active tab of front window javascript "window.getSelection().toString()"
         return theSelection
       end tell
     `,
-  },
-  Arc: {
-    tab: `
+    },
+    Arc: {
+      tab: `
       tell application "Arc"
         set theURL to URL of active tab of front window
         set theTitle to title of active tab of front window
         return theURL & "\n" & theTitle
       end tell
     `,
-    selection: `
+      selection: `
       tell application "Arc"
         set theSelection to execute active tab of front window javascript "window.getSelection().toString()"
         return theSelection
       end tell
     `,
-  },
-  Firefox: {
-    // Firefox doesn't expose tab URL via AppleScript - only window title available
-    // URL must be entered manually or pasted from clipboard
-    tab: `
+    },
+    Firefox: {
+      // Firefox doesn't expose tab URL via AppleScript - only window title available
+      // URL must be entered manually or pasted from clipboard
+      tab: `
       tell application "Firefox"
         set theTitle to name of front window
         -- Remove " - Mozilla Firefox" suffix if present
@@ -90,15 +97,15 @@ const BROWSER_SCRIPTS: Record<BrowserName, { tab: string; selection: string }> =
       -- Return placeholder URL - user must enter manually
       return "https://\n" & theTitle
     `,
-    selection: `
+      selection: `
       -- Firefox selection not available without activating the app
       -- Return empty - user can paste selection manually
       return ""
     `,
-  },
-  Zen: {
-    // Zen is Firefox-based, same limitations apply
-    tab: `
+    },
+    Zen: {
+      // Zen is Firefox-based, same limitations apply
+      tab: `
       tell application "Zen"
         set theTitle to name of front window
         -- Remove " - Zen" suffix if present
@@ -121,29 +128,29 @@ const BROWSER_SCRIPTS: Record<BrowserName, { tab: string; selection: string }> =
       -- Return placeholder URL - user must enter manually
       return "https://\n" & theTitle
     `,
-    selection: `
+      selection: `
       -- Zen selection not available without activating the app
       -- Return empty - user can paste selection manually
       return ""
     `,
-  },
-  "Brave Browser": {
-    // Brave is Chromium-based, works like Chrome
-    tab: `
+    },
+    "Brave Browser": {
+      // Brave is Chromium-based, works like Chrome
+      tab: `
       tell application "Brave Browser"
         set theURL to URL of active tab of front window
         set theTitle to title of active tab of front window
         return theURL & "\n" & theTitle
       end tell
     `,
-    selection: `
+      selection: `
       tell application "Brave Browser"
         set theSelection to execute active tab of front window javascript "window.getSelection().toString()"
         return theSelection
       end tell
     `,
-  },
-};
+    },
+  };
 
 /**
  * Get list of supported browsers
@@ -198,7 +205,14 @@ if let windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[S
  * Check if a string is a valid browser name
  */
 function isValidBrowserName(name: string): name is BrowserName {
-  const validNames: BrowserName[] = ["Safari", "Google Chrome", "Arc", "Firefox", "Zen", "Brave Browser"];
+  const validNames: BrowserName[] = [
+    "Safari",
+    "Google Chrome",
+    "Arc",
+    "Firefox",
+    "Zen",
+    "Brave Browser",
+  ];
   return validNames.includes(name as BrowserName);
 }
 
@@ -206,7 +220,14 @@ function isValidBrowserName(name: string): name is BrowserName {
  * Fallback detection - check which browsers have windows open
  */
 async function detectFrontmostBrowserFallback(): Promise<BrowserName | null> {
-  const browsersToTry: BrowserName[] = ["Arc", "Zen", "Brave Browser", "Google Chrome", "Safari", "Firefox"];
+  const browsersToTry: BrowserName[] = [
+    "Arc",
+    "Zen",
+    "Brave Browser",
+    "Google Chrome",
+    "Safari",
+    "Firefox",
+  ];
 
   for (const browser of browsersToTry) {
     try {
@@ -300,7 +321,7 @@ async function getTabFromBrowser(browser: BrowserName): Promise<BrowserTab> {
     };
   } catch (error) {
     throw new Error(
-      `Failed to get tab from ${browser}: ${error instanceof Error ? error.message : "Unknown error"}`
+      `Failed to get tab from ${browser}: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -308,7 +329,9 @@ async function getTabFromBrowser(browser: BrowserName): Promise<BrowserTab> {
 /**
  * Get selected text from the frontmost browser
  */
-export async function getSelection(browser?: BrowserName): Promise<string | null> {
+export async function getSelection(
+  browser?: BrowserName,
+): Promise<string | null> {
   const targetBrowser = browser || (await detectFrontmostBrowser());
 
   if (!targetBrowser) {

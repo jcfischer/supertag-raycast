@@ -19,7 +19,7 @@ export interface Fallback {
  */
 export async function showErrorWithFallback(
   error: string,
-  fallbacks: Fallback[] = []
+  fallbacks: Fallback[] = [],
 ): Promise<void> {
   const primaryAction =
     fallbacks.length > 0
@@ -42,11 +42,12 @@ export async function showErrorWithFallback(
  */
 export async function executeFallback(fallback: Fallback): Promise<void> {
   switch (fallback.action) {
-    case "terminal":
+    case "terminal": {
       // Open Terminal with k command
       const command = fallback.data || "k";
       await open(`terminal://run?command=${encodeURIComponent(command)}`);
       break;
+    }
 
     case "clipboard":
       if (fallback.data) {
@@ -73,7 +74,7 @@ export async function executeFallback(fallback: Fallback): Promise<void> {
  */
 export function createStandardFallbacks(
   command: string,
-  clipboardData?: string
+  clipboardData?: string,
 ): Fallback[] {
   const fallbacks: Fallback[] = [
     {
@@ -99,7 +100,7 @@ export function createStandardFallbacks(
  */
 export async function showSuccess(
   title: string,
-  message?: string
+  message?: string,
 ): Promise<void> {
   await showToast({
     style: Toast.Style.Success,

@@ -24,18 +24,24 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'")
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)));
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
+      String.fromCharCode(parseInt(code, 16)),
+    );
 }
 
 /**
  * Extract content attribute from meta tag using regex
  */
-function getMetaContent(html: string, property: string, isName = false): string | undefined {
+function getMetaContent(
+  html: string,
+  property: string,
+  isName = false,
+): string | undefined {
   const attrType = isName ? "name" : "property";
   // Match both single and double quotes, case insensitive
   const regex = new RegExp(
     `<meta\\s+[^>]*${attrType}=["']${property}["'][^>]*content=["']([^"']*)["']|<meta\\s+[^>]*content=["']([^"']*)["'][^>]*${attrType}=["']${property}["']`,
-    "i"
+    "i",
   );
   const match = html.match(regex);
   if (match) {
@@ -61,7 +67,9 @@ export function parseOpenGraphMeta(html: string): OpenGraphMeta {
 
   // OG tags (preferred)
   meta.title = getMetaContent(html, "og:title") || getTitleTag(html);
-  meta.description = getMetaContent(html, "og:description") || getMetaContent(html, "description", true);
+  meta.description =
+    getMetaContent(html, "og:description") ||
+    getMetaContent(html, "description", true);
   meta.image = getMetaContent(html, "og:image");
   meta.type = getMetaContent(html, "og:type");
   meta.siteName = getMetaContent(html, "og:site_name");
@@ -88,7 +96,8 @@ export async function fetchMetadata(url: string): Promise<OpenGraphMeta> {
   try {
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
         Accept: "text/html,application/xhtml+xml",
       },
       redirect: "follow",
@@ -101,7 +110,9 @@ export async function fetchMetadata(url: string): Promise<OpenGraphMeta> {
     const html = await response.text();
     return parseOpenGraphMeta(html);
   } catch (error) {
-    throw new Error(`Failed to fetch metadata: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fetch metadata: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 }
 
@@ -111,7 +122,10 @@ export async function fetchMetadata(url: string): Promise<OpenGraphMeta> {
  * @param wordsPerMinute - Reading speed (default: 200 wpm)
  * @returns Reading time in minutes
  */
-export function calculateReadingTime(text: string, wordsPerMinute = 200): number {
+export function calculateReadingTime(
+  text: string,
+  wordsPerMinute = 200,
+): number {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   return Math.ceil(words / wordsPerMinute);
 }

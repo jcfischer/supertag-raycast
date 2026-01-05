@@ -13,24 +13,29 @@ export interface CLIResponse<T = unknown> {
 /**
  * Path to supertag CLI binary
  */
-export const SUPERTAG_PATH = process.env.SUPERTAG_PATH || `${homedir()}/bin/supertag`;
+export const SUPERTAG_PATH =
+  process.env.SUPERTAG_PATH || `${homedir()}/bin/supertag`;
 
 /**
  * Create Tana node directly via supertag-cli
  */
 export async function captureTana(
   text: string,
-  supertag: "todo" | "note" | "idea" = "todo"
+  supertag: "todo" | "note" | "idea" = "todo",
 ): Promise<CLIResponse<{ message: string; nodeCreated: boolean }>> {
   try {
-    const { stdout, exitCode } = await execa(SUPERTAG_PATH, ["create", supertag, text], {
-      timeout: 10000,
-      reject: false,
-      env: {
-        ...process.env,
-        PATH: `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`,
+    const { stdout, exitCode } = await execa(
+      SUPERTAG_PATH,
+      ["create", supertag, text],
+      {
+        timeout: 10000,
+        reject: false,
+        env: {
+          ...process.env,
+          PATH: `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`,
+        },
       },
-    });
+    );
 
     if (exitCode === 0) {
       return {
@@ -60,7 +65,7 @@ export async function captureTana(
  * Sends Tana Paste content via stdin to supertag-cli
  */
 export async function capturePlainNode(
-  tanaPaste: string
+  tanaPaste: string,
 ): Promise<CLIResponse<{ message: string; nodeCreated: boolean }>> {
   try {
     const { stdout, stderr, exitCode } = await execa(SUPERTAG_PATH, ["post"], {
@@ -85,7 +90,8 @@ export async function capturePlainNode(
 
     return {
       success: false,
-      error: stderr || stdout || `supertag post failed with exit code ${exitCode}`,
+      error:
+        stderr || stdout || `supertag post failed with exit code ${exitCode}`,
     };
   } catch (error) {
     const execaError = error as ExecaError;
@@ -110,7 +116,13 @@ export interface SupertagField {
   fieldLabelId: string;
   originTagName: string;
   depth: number;
-  inferredDataType: "text" | "date" | "reference" | "options" | "number" | "checkbox";
+  inferredDataType:
+    | "text"
+    | "date"
+    | "reference"
+    | "options"
+    | "number"
+    | "checkbox";
   targetSupertagId?: string;
   targetSupertagName?: string;
 }
@@ -124,7 +136,9 @@ export interface SupertagSchema {
 /**
  * List top supertags by usage
  */
-export async function listSupertags(limit = 100): Promise<CLIResponse<SupertagInfo[]>> {
+export async function listSupertags(
+  limit = 100,
+): Promise<CLIResponse<SupertagInfo[]>> {
   try {
     const { stdout, stderr, exitCode } = await execa(
       SUPERTAG_PATH,
@@ -136,7 +150,7 @@ export async function listSupertags(limit = 100): Promise<CLIResponse<SupertagIn
           ...process.env,
           PATH: `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`,
         },
-      }
+      },
     );
 
     if (exitCode === 0 && stdout) {
@@ -153,7 +167,8 @@ export async function listSupertags(limit = 100): Promise<CLIResponse<SupertagIn
 
     return {
       success: false,
-      error: stderr || stdout || `Failed to list supertags (exit code ${exitCode})`,
+      error:
+        stderr || stdout || `Failed to list supertags (exit code ${exitCode})`,
     };
   } catch (error) {
     const execaError = error as ExecaError;
@@ -167,7 +182,9 @@ export async function listSupertags(limit = 100): Promise<CLIResponse<SupertagIn
 /**
  * Get fields for a supertag
  */
-export async function getSupertag(tagName: string): Promise<CLIResponse<SupertagSchema>> {
+export async function getSupertag(
+  tagName: string,
+): Promise<CLIResponse<SupertagSchema>> {
   try {
     const { stdout, stderr, exitCode } = await execa(
       SUPERTAG_PATH,
@@ -179,7 +196,7 @@ export async function getSupertag(tagName: string): Promise<CLIResponse<Supertag
           ...process.env,
           PATH: `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`,
         },
-      }
+      },
     );
 
     if (exitCode === 0 && stdout) {
@@ -196,7 +213,10 @@ export async function getSupertag(tagName: string): Promise<CLIResponse<Supertag
       }
     }
 
-    return { success: false, error: stderr || `Failed to get supertag (exit ${exitCode})` };
+    return {
+      success: false,
+      error: stderr || `Failed to get supertag (exit ${exitCode})`,
+    };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
@@ -208,7 +228,7 @@ export async function getSupertag(tagName: string): Promise<CLIResponse<Supertag
 export async function createTanaNode(
   supertag: string,
   name: string,
-  fields?: Record<string, string>
+  fields?: Record<string, string>,
 ): Promise<CLIResponse<{ message: string }>> {
   try {
     let args: string[];
@@ -238,7 +258,10 @@ export async function createTanaNode(
       };
     }
 
-    return { success: false, error: stderr || stdout || `Failed to create node (exit ${exitCode})` };
+    return {
+      success: false,
+      error: stderr || stdout || `Failed to create node (exit ${exitCode})`,
+    };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
@@ -255,7 +278,9 @@ export interface FieldOption {
 /**
  * Get unique option values for a field (returns ID and text)
  */
-export async function getFieldOptions(fieldName: string): Promise<CLIResponse<FieldOption[]>> {
+export async function getFieldOptions(
+  fieldName: string,
+): Promise<CLIResponse<FieldOption[]>> {
   try {
     const { stdout, exitCode } = await execa(
       SUPERTAG_PATH,
@@ -267,12 +292,15 @@ export async function getFieldOptions(fieldName: string): Promise<CLIResponse<Fi
           ...process.env,
           PATH: `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`,
         },
-      }
+      },
     );
 
     if (exitCode === 0 && stdout) {
       try {
-        const values = JSON.parse(stdout) as Array<{ valueNodeId: string; valueText: string }>;
+        const values = JSON.parse(stdout) as Array<{
+          valueNodeId: string;
+          valueText: string;
+        }>;
         // Extract unique options by ID
         const seen = new Set<string>();
         const unique: FieldOption[] = [];
@@ -288,7 +316,10 @@ export async function getFieldOptions(fieldName: string): Promise<CLIResponse<Fi
       }
     }
 
-    return { success: false, error: `Failed to get field options (exit ${exitCode})` };
+    return {
+      success: false,
+      error: `Failed to get field options (exit ${exitCode})`,
+    };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
@@ -298,13 +329,26 @@ export async function getFieldOptions(fieldName: string): Promise<CLIResponse<Fi
  * Get nodes with a specific supertag (for "options from supertag" fields)
  * Uses lowercase tag name for case-insensitive matching
  */
-export async function getNodesBySupertag(tagName: string, limit = 200): Promise<CLIResponse<FieldOption[]>> {
+export async function getNodesBySupertag(
+  tagName: string,
+  limit = 200,
+): Promise<CLIResponse<FieldOption[]>> {
   try {
     // Use lowercase for case-insensitive tag matching
     const normalizedTagName = tagName.toLowerCase();
     const { stdout, exitCode } = await execa(
       SUPERTAG_PATH,
-      ["search", "--tag", normalizedTagName, "--include-descendants", "--json", "--limit", String(limit), "--select", "id,name"],
+      [
+        "search",
+        "--tag",
+        normalizedTagName,
+        "--include-descendants",
+        "--json",
+        "--limit",
+        String(limit),
+        "--select",
+        "id,name",
+      ],
       {
         timeout: 10000,
         reject: false,
@@ -312,7 +356,7 @@ export async function getNodesBySupertag(tagName: string, limit = 200): Promise<
           ...process.env,
           PATH: `${homedir()}/bin:/usr/local/bin:/opt/homebrew/bin:${process.env.PATH || ""}`,
         },
-      }
+      },
     );
 
     if (exitCode === 0 && stdout) {

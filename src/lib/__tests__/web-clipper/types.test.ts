@@ -6,7 +6,6 @@ import {
   DomainPreferenceSchema,
   AIConfigSchema,
   type WebClip,
-  type Highlight,
   type ClipTemplate,
   type DomainPreference,
   type AIConfig,

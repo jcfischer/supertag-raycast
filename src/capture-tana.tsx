@@ -35,7 +35,9 @@ function buildTanaJSON(name: string, content: string): TanaNode[] {
     // Parse lines and calculate indentation levels
     const parsed: ParsedLine[] = lines.map((line) => {
       const trimmed = line.trimStart();
-      const nodeContent = trimmed.startsWith("-") ? trimmed.slice(1).trim() : trimmed;
+      const nodeContent = trimmed.startsWith("-")
+        ? trimmed.slice(1).trim()
+        : trimmed;
       const indent = line.search(/\S/);
       return { indent, text: nodeContent };
     });
@@ -134,13 +136,16 @@ export default function Command() {
 
         // Fallback: copy Tana Paste manually
         const tanaPaste = buildTanaPaste(name + "\n" + text);
-        await showErrorWithFallback(result.error || "Failed to create Tana node", [
-          {
-            action: "clipboard",
-            label: "Copy Tana Paste manually",
-            data: tanaPaste,
-          },
-        ]);
+        await showErrorWithFallback(
+          result.error || "Failed to create Tana node",
+          [
+            {
+              action: "clipboard",
+              label: "Copy Tana Paste manually",
+              data: tanaPaste,
+            },
+          ],
+        );
       }
     } catch (error) {
       toast.hide();
@@ -156,7 +161,7 @@ export default function Command() {
             label: "Copy Tana Paste manually",
             data: tanaPaste,
           },
-        ]
+        ],
       );
     } finally {
       setIsLoading(false);

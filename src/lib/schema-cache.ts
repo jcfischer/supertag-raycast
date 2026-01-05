@@ -101,7 +101,7 @@ export class SchemaCache {
       "supertag",
       "workspaces",
       this.workspace,
-      "schema-registry.json"
+      "schema-registry.json",
     );
   }
 
@@ -130,7 +130,7 @@ export class SchemaCache {
   private collectInheritedFields(
     supertag: CachedSupertag,
     visited: Set<string>,
-    depth: number = 0
+    depth: number = 0,
   ): CachedField[] {
     // Prevent infinite loops
     if (visited.has(supertag.id)) return [];
@@ -155,9 +155,15 @@ export class SchemaCache {
     if (supertag.extends && this.cache) {
       for (const parentId of supertag.extends) {
         // Find parent by ID
-        const parent = Array.from(this.cache.values()).find(s => s.id === parentId);
+        const parent = Array.from(this.cache.values()).find(
+          (s) => s.id === parentId,
+        );
         if (parent) {
-          const parentFields = this.collectInheritedFields(parent, visited, depth + 1);
+          const parentFields = this.collectInheritedFields(
+            parent,
+            visited,
+            depth + 1,
+          );
           for (const field of parentFields) {
             // Only add if not already present (child fields override)
             if (!seenFieldNames.has(field.name)) {

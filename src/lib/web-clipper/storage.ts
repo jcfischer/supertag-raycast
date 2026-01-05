@@ -1,4 +1,9 @@
-import type { ClipTemplate, DomainPreference, AIConfig, WebClip } from "./types";
+import type {
+  ClipTemplate,
+  DomainPreference,
+  AIConfig,
+  WebClip,
+} from "./types";
 import { DEFAULT_AI_CONFIG } from "./types";
 
 /**
@@ -57,7 +62,10 @@ export class WebClipStorage {
     } else {
       templates.push(template);
     }
-    await this.storage.setItem(STORAGE_KEYS.templates, JSON.stringify(templates));
+    await this.storage.setItem(
+      STORAGE_KEYS.templates,
+      JSON.stringify(templates),
+    );
   }
 
   /**
@@ -66,7 +74,10 @@ export class WebClipStorage {
   async deleteTemplate(id: string): Promise<void> {
     const templates = await this.getTemplates();
     const filtered = templates.filter((t) => t.id !== id);
-    await this.storage.setItem(STORAGE_KEYS.templates, JSON.stringify(filtered));
+    await this.storage.setItem(
+      STORAGE_KEYS.templates,
+      JSON.stringify(filtered),
+    );
   }
 
   // === Domain Preferences ===
@@ -134,7 +145,10 @@ export class WebClipStorage {
     try {
       const clips = JSON.parse(data) as WebClip[];
       // Sort by clippedAt descending
-      return clips.sort((a, b) => new Date(b.clippedAt).getTime() - new Date(a.clippedAt).getTime());
+      return clips.sort(
+        (a, b) =>
+          new Date(b.clippedAt).getTime() - new Date(a.clippedAt).getTime(),
+      );
     } catch {
       return [];
     }
@@ -149,7 +163,10 @@ export class WebClipStorage {
     clips.unshift(clip);
     // Limit to MAX_RECENT_CLIPS
     const limited = clips.slice(0, MAX_RECENT_CLIPS);
-    await this.storage.setItem(STORAGE_KEYS.recentClips, JSON.stringify(limited));
+    await this.storage.setItem(
+      STORAGE_KEYS.recentClips,
+      JSON.stringify(limited),
+    );
   }
 
   /**

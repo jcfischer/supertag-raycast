@@ -9,7 +9,7 @@ import {
   Icon,
   useNavigation,
 } from "@raycast/api";
-import { useState, useEffect, useRef, memo, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   listSupertags,
   getSupertag,
@@ -22,26 +22,6 @@ import {
   type FieldOption,
 } from "./lib/cli";
 import { SchemaCache } from "./lib/schema-cache";
-
-/**
- * Map field data type to Raycast form component type
- */
-function getFieldIcon(dataType: string): Icon {
-  switch (dataType) {
-    case "date":
-      return Icon.Calendar;
-    case "reference":
-      return Icon.Link;
-    case "options":
-      return Icon.List;
-    case "checkbox":
-      return Icon.Checkmark;
-    case "number":
-      return Icon.Hashtag;
-    default:
-      return Icon.Text;
-  }
-}
 
 /**
  * First screen: Simple name input
@@ -77,7 +57,7 @@ function NameInputForm({ supertag }: { supertag: SupertagInfo }) {
             fieldLabelId: f.attributeId,
             originTagName: f.originTagName || cachedSchema.name,
             depth: f.depth ?? 0,
-            inferredDataType: f.dataType as any,
+            inferredDataType: f.dataType as SupertagField["inferredDataType"],
             targetSupertagId: f.targetSupertag?.id,
             targetSupertagName: f.targetSupertag?.name,
           })),
@@ -95,16 +75,26 @@ function NameInputForm({ supertag }: { supertag: SupertagInfo }) {
       if (schemaData) {
         // Load options for reference/options fields
         const optionsFields = schemaData.fields.filter(
-          (f) => f.inferredDataType === "options" || f.inferredDataType === "reference"
+          (f) =>
+            f.inferredDataType === "options" ||
+            f.inferredDataType === "reference",
         );
         const optionsPromises = optionsFields.map(async (field) => {
           if (field.inferredDataType === "options") {
             const optResult = await getFieldOptions(field.fieldName);
-            return { fieldName: field.fieldName, options: optResult.data || [] };
+            return {
+              fieldName: field.fieldName,
+              options: optResult.data || [],
+            };
           } else {
             if (field.targetSupertagName) {
-              const optResult = await getNodesBySupertag(field.targetSupertagName);
-              return { fieldName: field.fieldName, options: optResult.data || [] };
+              const optResult = await getNodesBySupertag(
+                field.targetSupertagName,
+              );
+              return {
+                fieldName: field.fieldName,
+                options: optResult.data || [],
+              };
             }
             return { fieldName: field.fieldName, options: [] };
           }
@@ -138,7 +128,7 @@ function NameInputForm({ supertag }: { supertag: SupertagInfo }) {
         initialName={name}
         preloadedSchema={preloadedData.schema}
         preloadedOptions={preloadedData.fieldOptions}
-      />
+      />,
     );
   };
 
@@ -160,7 +150,11 @@ function NameInputForm({ supertag }: { supertag: SupertagInfo }) {
       />
       <Form.Description
         title="Loading"
-        text={preloadedData.schema ? "✓ Schema loaded" : "Loading schema in background..."}
+        text={
+          preloadedData.schema
+            ? "✓ Schema loaded"
+            : "Loading schema in background..."
+        }
       />
     </Form>
   );
@@ -215,7 +209,7 @@ function FullNodeForm({
     const result = await createTanaNode(
       supertag.tagName,
       initialName,
-      Object.keys(fields).length > 0 ? fields : undefined
+      Object.keys(fields).length > 0 ? fields : undefined,
     );
 
     if (result.success) {
@@ -275,9 +269,10 @@ function FieldInput({
   autoFocus?: boolean;
 }) {
   const title = field.fieldName;
-  const placeholder = field.originTagName !== field.fieldName
-    ? `From ${field.originTagName}`
-    : undefined;
+  const placeholder =
+    field.originTagName !== field.fieldName
+      ? `From ${field.originTagName}`
+      : undefined;
 
   // Format date in local timezone (not UTC) to avoid off-by-one errors
   const formatDateLocal = (date: Date): string => {
@@ -312,7 +307,9 @@ function FieldInput({
     case "options":
     case "reference":
       if (process.env.NODE_ENV === "development") {
-        console.log(`[FieldInput] ${field.fieldName}: ${options?.length || 0} options, type=${field.inferredDataType}`);
+        console.log(
+          `[FieldInput] ${field.fieldName}: ${options?.length || 0} options, type=${field.inferredDataType}`,
+        );
       }
 
       // For reference fields, allow creating new nodes by typing a name
@@ -331,9 +328,16 @@ function FieldInput({
               value={dropdownValue}
               onChange={(newValue) => onChange(newValue)} // Clear "NEW:" prefix when dropdown selected
             >
-              <Form.Dropdown.Item value="" title="(select existing or create new below)" />
+              <Form.Dropdown.Item
+                value=""
+                title="(select existing or create new below)"
+              />
               {options?.map((opt) => (
-                <Form.Dropdown.Item key={opt.id} value={opt.id} title={opt.text} />
+                <Form.Dropdown.Item
+                  key={opt.id}
+                  value={opt.id}
+                  title={opt.text}
+                />
               )) || []}
             </Form.Dropdown>
             <Form.TextField
@@ -408,10 +412,7 @@ export default function Command() {
   }
 
   return (
-    <List
-      isLoading={isLoading}
-      searchBarPlaceholder="Search supertags..."
-    >
+    <List isLoading={isLoading} searchBarPlaceholder="Search supertags...">
       {supertags.map((tag) => (
         <List.Item
           key={tag.tagId}
