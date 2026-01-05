@@ -19,9 +19,26 @@ import {
   type BrowserTab,
   type OpenGraphMeta,
   type BrowserName,
+  type ExtractedArticle,
+  fetchAndExtractArticleWithMarkdown,
+  WebClipStorage,
+  findClipFriendlySupertags,
+  type AnalyzedSupertag,
 } from "./lib/web-clipper";
-import { listSupertags, createTanaNode, type SupertagInfo } from "./lib/cli";
+import { LocalStorage } from "@raycast/api";
+import { SchemaCache } from "./lib/schema-cache";
+import { createTanaNode, type TanaChildNode } from "./lib/cli";
 import { showErrorWithFallback } from "./lib/fallbacks";
+
+// Create storage instance with Raycast LocalStorage
+const storage = new WebClipStorage({
+  getItem: (key) => LocalStorage.getItem(key),
+  setItem: (key, value) => LocalStorage.setItem(key, value),
+  removeItem: (key) => LocalStorage.removeItem(key),
+});
+
+// Schema cache for supertag analysis
+const schemaCache = new SchemaCache();
 
 /**
  * Create a WebClip from current state
@@ -30,8 +47,9 @@ function createClipFromState(
   url: string,
   title: string,
   description: string,
-  selection: string,
+  highlightTexts: string[],
   metadata: OpenGraphMeta | null,
+  articleContent?: string,
 ): WebClip {
   return {
     url,
@@ -41,7 +59,8 @@ function createClipFromState(
     author: metadata?.author,
     siteName: metadata?.siteName,
     publishedDate: metadata?.publishedTime,
-    highlights: selection ? [{ text: selection }] : [],
+    highlights: highlightTexts.map((text) => ({ text })),
+    content: articleContent,
     clippedAt: new Date().toISOString(),
   };
 }
@@ -54,17 +73,21 @@ export default function Command() {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [selection, setSelection] = useState("");
+  const [highlights, setHighlights] = useState<string[]>([]);
+  const [currentHighlight, setCurrentHighlight] = useState("");
   const [supertag, setSupertag] = useState("#bookmark");
+  const [extractArticle, setExtractArticle] = useState(false);
 
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
 
   // Data
   const [browserTab, setBrowserTab] = useState<BrowserTab | null>(null);
   const [metadata, setMetadata] = useState<OpenGraphMeta | null>(null);
-  const [supertags, setSupertags] = useState<SupertagInfo[]>([]);
+  const [analyzedSupertags, setAnalyzedSupertags] = useState<AnalyzedSupertag[]>([]);
+  const [article, setArticle] = useState<ExtractedArticle | null>(null);
 
   // Load initial data from browser
   useEffect(() => {
@@ -76,10 +99,17 @@ export default function Command() {
         setUrl(tab.url);
         setTitle(tab.title);
 
-        // Get selection
+        // Get selection and set as current highlight for editing
         const sel = await getSelection(tab.browser as BrowserName);
         if (sel) {
-          setSelection(sel);
+          setCurrentHighlight(sel);
+        }
+
+        // Load domain preference for pre-selecting supertag
+        const domain = extractDomain(tab.url);
+        const domainPref = await storage.getDomainPreference(domain);
+        if (domainPref) {
+          setSupertag(domainPref.supertag);
         }
 
         // Fetch metadata in background
@@ -98,11 +128,13 @@ export default function Command() {
             // Metadata fetch failed, continue with basic info
           });
 
-        // Load supertags
-        const result = await listSupertags(50);
-        if (result.success && result.data) {
-          setSupertags(result.data);
-        }
+        // Load and analyze supertags from schema cache
+        const allSupertags = schemaCache.getAllSupertags();
+        const clipFriendly = findClipFriendlySupertags(allSupertags, {
+          minScore: 5, // Include tags with at least some clip-relevant fields
+          limit: 30,
+        });
+        setAnalyzedSupertags(clipFriendly);
       } catch (error) {
         await showToast({
           style: Toast.Style.Failure,
@@ -117,18 +149,66 @@ export default function Command() {
     loadInitialData();
   }, []);
 
-  // Build live preview
+  // Extract article when toggle is enabled
+  useEffect(() => {
+    if (!extractArticle || !url) {
+      setArticle(null);
+      return;
+    }
+
+    async function doExtract() {
+      setIsExtracting(true);
+      try {
+        const extracted = await fetchAndExtractArticleWithMarkdown(url);
+        setArticle(extracted);
+        if (extracted) {
+          await showToast({
+            style: Toast.Style.Success,
+            title: "Article extracted",
+            message: `${extracted.readingTime} min read`,
+          });
+        } else {
+          await showToast({
+            style: Toast.Style.Failure,
+            title: "Could not extract article",
+            message: "This page may not be an article",
+          });
+        }
+      } catch (error) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Extraction failed",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
+      } finally {
+        setIsExtracting(false);
+      }
+    }
+
+    doExtract();
+  }, [extractArticle, url]);
+
+  // Build live preview - include current highlight with saved ones
+  const allHighlights = useMemo(() => {
+    const all = [...highlights];
+    if (currentHighlight.trim()) {
+      all.push(currentHighlight.trim());
+    }
+    return all;
+  }, [highlights, currentHighlight]);
+
   const preview = useMemo(() => {
     if (!url || !title) return "";
     const clip = createClipFromState(
       url,
       title,
       description,
-      selection,
+      allHighlights,
       metadata,
+      article?.markdown,
     );
     return buildTanaPasteFromClip(clip, supertag);
-  }, [url, title, description, selection, supertag, metadata]);
+  }, [url, title, description, allHighlights, supertag, metadata, article]);
 
   // Handle save to Tana
   async function handleSave() {
@@ -151,37 +231,130 @@ export default function Command() {
     try {
       const tagName = supertag.replace(/^#/, "");
 
-      // Build fields - map to correct field names based on supertag
-      const fields: Record<string, string> = {};
-
-      // URL field varies by supertag
-      if (tagName === "article") {
-        fields["Source URL"] = url;
-      } else {
-        fields.URL = url;
+      // Build fields (metadata only)
+      const fields: Record<string, string> = {
+        URL: url,
+      };
+      if (metadata?.description) {
+        fields.Description = metadata.description;
       }
-
-      // Author field
       if (metadata?.author) {
         fields.Author = metadata.author;
       }
+      if (metadata?.siteName) {
+        fields.Site = metadata.siteName;
+      }
+      fields.Clipped = new Date().toISOString().split("T")[0];
 
-      // TODO: Generalize before release - current mapping is schema-specific
-      // Options: 1) Query schema for text fields, 2) User-configurable mapping,
-      // 3) Add as child node instead of field, 4) Convention-based (Notes/Summary/Highlight)
-      if (selection) {
-        if (tagName === "bookmark") {
-          fields.Snapshot = selection;
-        } else if (tagName === "resource") {
-          fields.Summary = selection;
-        } else if (tagName === "reference") {
-          fields.Notes = selection;
+      // Build children (highlights + article content)
+      const children: TanaChildNode[] = [];
+
+      // Add highlights as children (clean newlines)
+      for (const highlight of allHighlights) {
+        const cleaned = highlight.replace(/\n/g, " ").trim();
+        if (cleaned) {
+          children.push({ name: cleaned });
         }
       }
 
-      const result = await createTanaNode(tagName, title, fields);
+      // Add article content as children, nesting paragraphs under headlines
+      // Track total size to stay under 5000 char API limit
+      let totalChars = JSON.stringify(fields).length + title.length;
+      const MAX_PAYLOAD_SIZE = 4500; // Leave buffer for JSON overhead
+      let wasTruncated = false;
+
+      if (article?.markdown) {
+        // Split by lines first, then process
+        const lines = article.markdown.split("\n");
+        let currentHeadline: TanaChildNode | null = null;
+        let currentParagraph: string[] = [];
+
+        const flushParagraph = () => {
+          if (currentParagraph.length === 0) return;
+          const text = currentParagraph.join(" ").trim();
+          currentParagraph = [];
+          // Skip empty or whitespace-only content
+          if (!text || text.length < 2) return;
+
+          if (totalChars + text.length > MAX_PAYLOAD_SIZE) {
+            wasTruncated = true;
+            return;
+          }
+
+          if (currentHeadline) {
+            currentHeadline.children = currentHeadline.children || [];
+            currentHeadline.children.push({ name: text });
+          } else {
+            children.push({ name: text });
+          }
+          totalChars += text.length;
+        };
+
+        const flushHeadline = () => {
+          if (!currentHeadline) return;
+          // Only add headline if it has children or is meaningful
+          if (currentHeadline.children && currentHeadline.children.length > 0) {
+            if (totalChars + JSON.stringify(currentHeadline).length > MAX_PAYLOAD_SIZE) {
+              wasTruncated = true;
+              return;
+            }
+            children.push(currentHeadline);
+            totalChars += currentHeadline.name.length;
+          } else {
+            // Headline without children - add as plain text
+            children.push({ name: currentHeadline.name });
+            totalChars += currentHeadline.name.length;
+          }
+          currentHeadline = null;
+        };
+
+        for (const line of lines) {
+          if (wasTruncated) break;
+
+          const trimmedLine = line.trim();
+
+          // Check if this is a headline
+          const headlineMatch = trimmedLine.match(/^(#{1,6})\s+(.+)$/);
+
+          if (headlineMatch) {
+            // Flush any pending paragraph
+            flushParagraph();
+            // Flush previous headline
+            flushHeadline();
+            // Start new headline
+            currentHeadline = { name: headlineMatch[2].trim() };
+          } else if (trimmedLine === "") {
+            // Empty line - flush paragraph
+            flushParagraph();
+          } else {
+            // Regular text - accumulate
+            currentParagraph.push(trimmedLine);
+          }
+        }
+
+        // Flush remaining content
+        if (!wasTruncated) {
+          flushParagraph();
+          flushHeadline();
+        }
+
+        // Add truncation marker if needed
+        if (wasTruncated) {
+          children.push({ name: "⚠️ [Content truncated due to size limit]" });
+        }
+      }
+
+      const result = await createTanaNode(tagName, title, fields, children);
 
       if (result.success) {
+        // Save domain preference for next time
+        const domain = extractDomain(url);
+        await storage.saveDomainPreference({
+          domain,
+          supertag,
+          lastUsed: new Date().toISOString(),
+        });
+
         toast.style = Toast.Style.Success;
         toast.title = "Saved to Tana!";
         toast.message = title.slice(0, 40);
@@ -218,15 +391,39 @@ export default function Command() {
     });
   }
 
+  // Add current text as a highlight
+  function handleAddHighlight() {
+    if (currentHighlight.trim()) {
+      setHighlights([...highlights, currentHighlight.trim()]);
+      setCurrentHighlight("");
+      showToast({
+        style: Toast.Style.Success,
+        title: "Highlight added",
+        message: `${highlights.length + 1} highlights total`,
+      });
+    }
+  }
+
+  // Remove a highlight by index
+  function handleRemoveHighlight(index: number) {
+    setHighlights(highlights.filter((_, i) => i !== index));
+  }
+
   return (
     <Form
-      isLoading={isLoading || isSaving}
+      isLoading={isLoading || isSaving || isExtracting}
       actions={
         <ActionPanel>
           <Action.SubmitForm
             title="Save to Tana"
             icon={Icon.Upload}
             onSubmit={handleSave}
+          />
+          <Action
+            title="Add Highlight"
+            icon={Icon.Plus}
+            shortcut={{ modifiers: ["cmd"], key: "enter" }}
+            onAction={handleAddHighlight}
           />
           <Action
             title="Copy as Tana Paste"
@@ -255,12 +452,20 @@ export default function Command() {
       />
 
       <Form.TextArea
-        id="selection"
-        title="Selection"
-        placeholder="Selected text from the page..."
-        value={selection}
-        onChange={setSelection}
+        id="currentHighlight"
+        title={`Highlight ${highlights.length > 0 ? `(${highlights.length} saved)` : ""}`}
+        placeholder="Add a text highlight..."
+        value={currentHighlight}
+        onChange={setCurrentHighlight}
+        info={highlights.length > 0 ? `Press ⌘+Enter to add another highlight` : undefined}
       />
+
+      {highlights.length > 0 && (
+        <Form.Description
+          title="Saved Highlights"
+          text={highlights.map((h, i) => `${i + 1}. ${h.slice(0, 60)}${h.length > 60 ? "..." : ""}`).join("\n")}
+        />
+      )}
 
       <Form.TextArea
         id="description"
@@ -270,42 +475,68 @@ export default function Command() {
         onChange={setDescription}
       />
 
+      <Form.Checkbox
+        id="extractArticle"
+        label="Extract Full Article"
+        value={extractArticle}
+        onChange={setExtractArticle}
+        info="Extract the main article content as markdown using Readability"
+      />
+
       <Form.Dropdown
         id="supertag"
         title="Supertag"
         value={supertag}
         onChange={setSupertag}
       >
-        <Form.Dropdown.Item
-          value="#bookmark"
-          title="#bookmark"
-          icon={Icon.Bookmark}
-        />
-        <Form.Dropdown.Item
-          value="#article"
-          title="#article"
-          icon={Icon.Document}
-        />
-        <Form.Dropdown.Item
-          value="#resource"
-          title="#resource"
-          icon={Icon.Link}
-        />
-        <Form.Dropdown.Item
-          value="#reference"
-          title="#reference"
-          icon={Icon.Book}
-        />
-        <Form.Dropdown.Section title="Your Supertags">
-          {supertags.slice(0, 20).map((tag) => (
+        {analyzedSupertags.length > 0 ? (
+          <>
+            <Form.Dropdown.Section title="Recommended for Clipping">
+              {analyzedSupertags
+                .filter((a) => a.hasUrlField)
+                .slice(0, 5)
+                .map((analyzed) => (
+                  <Form.Dropdown.Item
+                    key={analyzed.supertag.id}
+                    value={`#${analyzed.supertag.name}`}
+                    title={`#${analyzed.supertag.name}`}
+                    icon={Icon.Star}
+                  />
+                ))}
+            </Form.Dropdown.Section>
+            <Form.Dropdown.Section title="Other Tags">
+              {analyzedSupertags
+                .filter((a) => !a.hasUrlField)
+                .slice(0, 15)
+                .map((analyzed) => (
+                  <Form.Dropdown.Item
+                    key={analyzed.supertag.id}
+                    value={`#${analyzed.supertag.name}`}
+                    title={`#${analyzed.supertag.name}`}
+                    icon={Icon.Tag}
+                  />
+                ))}
+            </Form.Dropdown.Section>
+          </>
+        ) : (
+          <>
             <Form.Dropdown.Item
-              key={tag.tagId}
-              value={`#${tag.tagName}`}
-              title={`#${tag.tagName}`}
-              icon={Icon.Tag}
+              value="#bookmark"
+              title="#bookmark"
+              icon={Icon.Bookmark}
             />
-          ))}
-        </Form.Dropdown.Section>
+            <Form.Dropdown.Item
+              value="#article"
+              title="#article"
+              icon={Icon.Document}
+            />
+            <Form.Dropdown.Item
+              value="#resource"
+              title="#resource"
+              icon={Icon.Link}
+            />
+          </>
+        )}
       </Form.Dropdown>
 
       <Form.Separator />
@@ -319,6 +550,13 @@ export default function Command() {
         <Form.Description
           title="Source"
           text={`${browserTab.browser} • ${extractDomain(browserTab.url)}`}
+        />
+      )}
+
+      {article && (
+        <Form.Description
+          title="Article Info"
+          text={`${article.readingTime} min read • ${article.length.toLocaleString()} characters${article.byline ? ` • ${article.byline}` : ""}`}
         />
       )}
     </Form>

@@ -44,7 +44,19 @@ export {
   extractDomain,
   calculateReadingTime,
   countWords,
+  extractArticle as fetchAndExtractArticleWithMarkdown,
+  type ExtractedArticle,
 } from "./content";
+
+// Article extraction
+export {
+  extractArticle,
+  fetchAndExtractArticle,
+  parseHTMLToDOM,
+} from "./article";
+
+// Markdown conversion
+export { htmlToMarkdown, htmlToMarkdownWithOptions } from "./markdown";
 
 // Tana Paste builder
 export {
@@ -61,3 +73,20 @@ export {
   createRaycastStorage,
   type StorageInterface,
 } from "./storage";
+
+// Supertag analysis
+export {
+  analyzeSupertag,
+  findClipFriendlySupertags,
+  getBestTextFieldName,
+  type AnalyzedSupertag,
+  type FindOptions,
+} from "./supertag-analyzer";
+
+// Field mapping
+export {
+  mapClipToFields,
+  createDefaultMapping,
+  type ClipData,
+  type MapOptions,
+} from "./field-mapper";

@@ -223,27 +223,52 @@ export async function getSupertag(
 }
 
 /**
- * Create Tana node with fields
+ * Child node structure for Tana Input API
+ */
+export interface TanaChildNode {
+  name: string;
+  id?: string; // For references
+  children?: TanaChildNode[]; // Nested children
+}
+
+/**
+ * Create Tana node with fields and optional children
+ * Uses supertag create for simple nodes, or supertag post for nodes with children
  */
 export async function createTanaNode(
   supertag: string,
   name: string,
   fields?: Record<string, string>,
+  children?: TanaChildNode[],
 ): Promise<CLIResponse<{ message: string }>> {
   try {
-    let args: string[];
+    // If we have children, use supertag create with --children flags
+    // The create command handles field mapping and supertag resolution
+    const args: string[] = ["create", supertag];
 
     if (fields && Object.keys(fields).length > 0) {
-      // When using --json, name must be inside the JSON object
+      // Use --json for name and fields
       const jsonPayload = { name, ...fields };
-      args = ["create", supertag, "--json", JSON.stringify(jsonPayload)];
+      args.push("--json", JSON.stringify(jsonPayload));
     } else {
-      // Simple case: just name as argument
-      args = ["create", supertag, name];
+      args.push(name);
+    }
+
+    // Add children via --children flags
+    if (children && children.length > 0) {
+      for (const child of children) {
+        if (child.id || (child.children && child.children.length > 0)) {
+          // Reference or nested children - use JSON format
+          args.push("--children", JSON.stringify(child));
+        } else {
+          // Plain text child
+          args.push("--children", child.name);
+        }
+      }
     }
 
     const { stdout, stderr, exitCode } = await execa(SUPERTAG_PATH, args, {
-      timeout: 15000,
+      timeout: 30000,
       reject: false,
       env: {
         ...process.env,

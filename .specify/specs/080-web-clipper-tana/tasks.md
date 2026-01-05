@@ -1,10 +1,11 @@
 ---
 feature: "Web Clipper to Tana"
 plan: "./plan.md"
-status: "phase1_complete"
+status: "phase2_complete"
 total_tasks: 42
-completed: 12
+completed: 26
 phase1_completed: "2026-01-04"
+phase2_completed: "2026-01-05"
 ---
 
 # Tasks: Web Clipper to Tana
@@ -398,20 +399,20 @@ T-4.2 ────────────┘
 | T-1.11 | completed | 2026-01-04 | 2026-01-04 | Clipboard fallback |
 | T-1.12 | completed | 2026-01-04 | 2026-01-04 | Package.json |
 | **Phase 2: Enhanced** |
-| T-2.1 | pending | - | - | Dependencies |
-| T-2.2 | pending | - | - | Article extractor |
-| T-2.3 | pending | - | - | Markdown converter |
-| T-2.4 | pending | - | - | Reading time |
-| T-2.5 | pending | - | - | Content integration |
-| T-2.6 | pending | - | - | Extract toggle |
-| T-2.7 | pending | - | - | Reading time UI |
-| T-2.8 | pending | - | - | Multi-highlight |
-| T-2.9 | pending | - | - | Domain memory |
-| T-2.10 | pending | - | - | Domain pre-select |
-| T-2.11 | pending | - | - | Supertag analyzer |
-| T-2.12 | pending | - | - | Field mapper |
-| T-2.13 | pending | - | - | Smart supertag dropdown |
-| T-2.14 | pending | - | - | Replace hardcoded mapping |
+| T-2.1 | completed | 2026-01-05 | 2026-01-05 | Dependencies (readability, turndown, jsdom) |
+| T-2.2 | completed | 2026-01-05 | 2026-01-05 | Article extractor |
+| T-2.3 | completed | 2026-01-05 | 2026-01-05 | Markdown converter |
+| T-2.4 | completed | 2026-01-05 | 2026-01-05 | Reading time (already in content.ts) |
+| T-2.5 | completed | 2026-01-05 | 2026-01-05 | Content integration |
+| T-2.6 | completed | 2026-01-05 | 2026-01-05 | Extract toggle |
+| T-2.7 | completed | 2026-01-05 | 2026-01-05 | Reading time UI |
+| T-2.8 | completed | 2026-01-05 | 2026-01-05 | Multi-highlight |
+| T-2.9 | completed | 2026-01-05 | 2026-01-05 | Domain memory |
+| T-2.10 | completed | 2026-01-05 | 2026-01-05 | Domain pre-select |
+| T-2.11 | completed | 2026-01-05 | 2026-01-05 | Supertag analyzer |
+| T-2.12 | completed | 2026-01-05 | 2026-01-05 | Field mapper |
+| T-2.13 | completed | 2026-01-05 | 2026-01-05 | Smart supertag dropdown |
+| T-2.14 | completed | 2026-01-05 | 2026-01-05 | Replace hardcoded mapping |
 | **Phase 3: Templates** |
 | T-3.1 | pending | - | - | Template engine |
 | T-3.2 | pending | - | - | Filters |

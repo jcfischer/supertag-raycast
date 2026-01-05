@@ -31,15 +31,20 @@
     }
   ],
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
     "@raycast/api": "^1.92.1",
     "@raycast/utils": "^1.19.1",
     "execa": "^9.5.2",
+    "linkedom": "^0.18.12",
+    "turndown": "^7.2.2",
+    "turndown-plugin-gfm": "^1.0.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@raycast/eslint-config": "^1.0.11",
     "@types/node": "22.10.2",
     "@types/react": "18.3.18",
+    "@types/turndown": "^5.0.6",
     "eslint": "^8.57.1",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2"

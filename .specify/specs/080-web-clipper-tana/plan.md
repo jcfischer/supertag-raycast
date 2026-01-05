@@ -1,9 +1,9 @@
 ---
 feature: "Web Clipper to Tana"
 spec: "./spec.md"
-status: "phase1_complete"
+status: "phase2_complete"
 created: "2026-01-04"
-updated: "2026-01-04"
+updated: "2026-01-05"
 ---
 
 # Technical Plan: Web Clipper to Tana
@@ -248,28 +248,28 @@ Core clipping without AI or templates. Get basic flow working.
 
 **Success:** ✅ Can clip current tab to Tana with selection and see preview
 
-### Phase 2: Enhanced Capture
+### Phase 2: Enhanced Capture ✅ COMPLETE
 
 Full article extraction, multi-highlight support, and smart supertag detection.
 
-- [ ] Add `@mozilla/readability` and `turndown` dependencies
-- [ ] Create `lib/web-clipper/article.ts` - Readability wrapper
-- [ ] Create `lib/web-clipper/markdown.ts` - Turndown with GFM plugins
-- [ ] Update UI with "Extract Full Article" toggle
-- [ ] Add reading time estimate display
-- [ ] Support multiple highlights in session
-- [ ] Domain preference memory (last used supertag)
-- [ ] **Smart supertag detection** - Scan workspace for clip-friendly tags:
+- [x] Add `@mozilla/readability`, `turndown`, and `jsdom` dependencies
+- [x] Create `lib/web-clipper/article.ts` - Readability wrapper
+- [x] Create `lib/web-clipper/markdown.ts` - Turndown with GFM plugins
+- [x] Update UI with "Extract Full Article" toggle
+- [x] Add reading time estimate display
+- [x] Support multiple highlights in session
+- [x] Domain preference memory (last used supertag)
+- [x] **Smart supertag detection** - Scan workspace for clip-friendly tags:
   - Query schema-cache for supertags with URL field
   - Score by presence of text fields (notes/summary/highlight)
   - Rank and suggest in dropdown
-- [ ] **Dynamic field mapping** - Map clip data to schema fields:
+- [x] **Dynamic field mapping** - Map clip data to schema fields:
   - URL → first url-type field
   - Selection → text field matching notes/summary/highlight/snapshot pattern
   - Author/Description → matching field names
-  - Remove hardcoded field mappings from clip-web.tsx
+  - Removed hardcoded field mappings from clip-web.tsx
 
-**Success:** Can extract clean article content, selection saves to correct field for any supertag
+**Success:** ✅ Can extract clean article content, selection saves to correct field for any supertag
 
 ### Phase 3: Templates
 

@@ -1,9 +1,9 @@
 ---
 id: "080"
 feature: "Web Clipper to Tana"
-status: "phase1_complete"
+status: "phase2_complete"
 created: "2026-01-04"
-updated: "2026-01-04"
+updated: "2026-01-05"
 research: "Notion, Readwise Reader, Roam, Obsidian Web Clipper"
 ---
 
@@ -364,13 +364,13 @@ Show real-time preview of Tana Paste output in clip dialog.
 - [x] Live preview of Tana Paste format
 - [x] Smart browser detection using window z-order
 
-### Enhanced (Phase 2)
-- [ ] Full article extraction with Readability
-- [ ] Multi-highlight support
-- [ ] Template system with variables
-- [ ] Domain-based template matching
-- [ ] Smart supertag detection - scan workspace for clip-friendly tags (URL field, text fields for notes/summary)
-- [ ] Dynamic field mapping based on detected supertag schema
+### Enhanced (Phase 2) ✅ COMPLETE
+- [x] Full article extraction with Readability
+- [x] Multi-highlight support
+- [x] Domain preference memory (last used supertag)
+- [x] Smart supertag detection - scan workspace for clip-friendly tags (URL field, text fields for notes/summary)
+- [x] Dynamic field mapping based on detected supertag schema
+- [x] Reading time display
 
 ### AI-Powered (Phase 3)
 - [ ] AI summarization (Claude or Ollama)

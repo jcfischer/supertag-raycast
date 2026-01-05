@@ -1,4 +1,6 @@
-import type { OpenGraphMeta } from "./types";
+import type { OpenGraphMeta, ArticleContent } from "./types";
+import { extractArticle as extractArticleFromHTML } from "./article";
+import { htmlToMarkdown } from "./markdown";
 
 /**
  * Extract domain from URL, removing www prefix
@@ -135,4 +137,54 @@ export function calculateReadingTime(
  */
 export function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * Extracted article with markdown content
+ */
+export interface ExtractedArticle extends ArticleContent {
+  markdown: string; // Full article as markdown
+}
+
+/**
+ * Fetch and extract article content from a URL
+ * Combines fetching, Readability extraction, and markdown conversion
+ * @param url - URL to fetch and extract
+ * @returns ExtractedArticle or null if extraction failed
+ */
+export async function extractArticle(
+  url: string,
+): Promise<ExtractedArticle | null> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        Accept: "text/html,application/xhtml+xml",
+      },
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const html = await response.text();
+    const article = await extractArticleFromHTML(html, url);
+
+    if (!article) {
+      return null;
+    }
+
+    // Convert HTML content to markdown
+    const markdown = htmlToMarkdown(article.content);
+
+    return {
+      ...article,
+      markdown,
+    };
+  } catch (error) {
+    console.error("Failed to extract article:", error);
+    return null;
+  }
 }
