@@ -5,7 +5,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { writeFileSync, unlinkSync, mkdirSync, existsSync, rmSync, utimesSync } from "fs";
+import {
+  writeFileSync,
+  unlinkSync,
+  mkdirSync,
+  existsSync,
+  rmSync,
+  utimesSync,
+} from "fs";
 import { join } from "path";
 import { SchemaCache } from "../schema-cache";
 import type { CachedSupertag } from "../schema-cache";
@@ -92,10 +99,14 @@ describe("SchemaCache", () => {
       "share",
       "supertag",
       "workspaces",
-      "test-workspace"
+      "test-workspace",
     );
     mkdirSync(actualTestPath, { recursive: true });
-    writeFileSync(join(actualTestPath, "schema-registry.json"), JSON.stringify(data), "utf-8");
+    writeFileSync(
+      join(actualTestPath, "schema-registry.json"),
+      JSON.stringify(data),
+      "utf-8",
+    );
     return cache;
   };
 
@@ -177,7 +188,7 @@ describe("SchemaCache", () => {
         "supertag",
         "workspaces",
         "test-workspace",
-        "schema-registry.json"
+        "schema-registry.json",
       );
 
       // Wait a bit to ensure mtime changes (filesystem mtime has 1 second resolution on some systems)
@@ -210,7 +221,7 @@ describe("SchemaCache", () => {
         "supertag",
         "workspaces",
         "test-workspace",
-        "schema-registry.json"
+        "schema-registry.json",
       );
       unlinkSync(testPath);
 
@@ -223,10 +234,14 @@ describe("SchemaCache", () => {
         "share",
         "supertag",
         "workspaces",
-        "test-workspace-2"
+        "test-workspace-2",
       );
       mkdirSync(testPath2, { recursive: true });
-      writeFileSync(join(testPath2, "schema-registry.json"), JSON.stringify(sampleSchema), "utf-8");
+      writeFileSync(
+        join(testPath2, "schema-registry.json"),
+        JSON.stringify(sampleSchema),
+        "utf-8",
+      );
 
       const cache2 = new SchemaCache("test-workspace-2");
 
@@ -264,10 +279,14 @@ describe("SchemaCache", () => {
         "share",
         "supertag",
         "workspaces",
-        "corrupted-workspace"
+        "corrupted-workspace",
       );
       mkdirSync(testPath, { recursive: true });
-      writeFileSync(join(testPath, "schema-registry.json"), "{ invalid json }", "utf-8");
+      writeFileSync(
+        join(testPath, "schema-registry.json"),
+        "{ invalid json }",
+        "utf-8",
+      );
 
       const cache = new SchemaCache("corrupted-workspace");
       const result = cache.getSupertag("person");
@@ -282,10 +301,14 @@ describe("SchemaCache", () => {
         "share",
         "supertag",
         "workspaces",
-        "corrupted-workspace-2"
+        "corrupted-workspace-2",
       );
       mkdirSync(testPath, { recursive: true });
-      writeFileSync(join(testPath, "schema-registry.json"), "not json at all", "utf-8");
+      writeFileSync(
+        join(testPath, "schema-registry.json"),
+        "not json at all",
+        "utf-8",
+      );
 
       const cache = new SchemaCache("corrupted-workspace-2");
       const result = cache.getAllSupertags();

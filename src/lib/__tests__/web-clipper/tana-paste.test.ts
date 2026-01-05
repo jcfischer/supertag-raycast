@@ -1,5 +1,8 @@
 import { describe, it, expect } from "bun:test";
-import { buildTanaPaste, buildTanaPasteFromClip } from "../../web-clipper/tana-paste";
+import {
+  buildTanaPaste,
+  buildTanaPasteFromClip,
+} from "../../web-clipper/tana-paste";
 import type { WebClip } from "../../web-clipper/types";
 
 describe("Tana Paste builder", () => {
@@ -88,7 +91,9 @@ describe("Tana Paste builder", () => {
 
       expect(result).toContain("%%tana%%");
       expect(result).toContain("- Great Article #article");
-      expect(result).toContain("- URL:: [Great Article](https://example.com/article)");
+      expect(result).toContain(
+        "- URL:: [Great Article](https://example.com/article)",
+      );
       expect(result).toContain("- Description:: An amazing read");
       expect(result).toContain("  - Key insight");
     });
@@ -116,7 +121,9 @@ describe("Tana Paste builder", () => {
       };
 
       const result = buildTanaPasteFromClip(clip, "#bookmark");
-      expect(result).toContain("- Summary:: AI-generated summary of the article");
+      expect(result).toContain(
+        "- Summary:: AI-generated summary of the article",
+      );
     });
 
     it("should include keypoints as nested bullets", () => {

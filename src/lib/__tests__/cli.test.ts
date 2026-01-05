@@ -276,7 +276,7 @@ describe("getNodesBySupertag", () => {
     expect(mockExeca).toHaveBeenCalledWith(
       expect.any(String),
       expect.arrayContaining(["--tag", "company"]),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 

@@ -19,7 +19,7 @@ export interface Fallback {
  */
 export async function showErrorWithFallback(
   error: string,
-  fallbacks: Fallback[] = []
+  fallbacks: Fallback[] = [],
 ): Promise<void> {
   const primaryAction =
     fallbacks.length > 0
@@ -73,7 +73,7 @@ export async function executeFallback(fallback: Fallback): Promise<void> {
  */
 export function createStandardFallbacks(
   command: string,
-  clipboardData?: string
+  clipboardData?: string,
 ): Fallback[] {
   const fallbacks: Fallback[] = [
     {
@@ -99,7 +99,7 @@ export function createStandardFallbacks(
  */
 export async function showSuccess(
   title: string,
-  message?: string
+  message?: string,
 ): Promise<void> {
   await showToast({
     style: Toast.Style.Success,

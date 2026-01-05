@@ -57,7 +57,10 @@ export function buildTanaPaste(options: TanaPasteOptions): string {
 /**
  * Build Tana Paste from a WebClip object
  */
-export function buildTanaPasteFromClip(clip: WebClip, supertag: string): string {
+export function buildTanaPasteFromClip(
+  clip: WebClip,
+  supertag: string,
+): string {
   const lines: string[] = ["%%tana%%"];
 
   // Main node with title and supertag

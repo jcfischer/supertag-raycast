@@ -33,7 +33,7 @@ function createClipFromState(
   title: string,
   description: string,
   selection: string,
-  metadata: OpenGraphMeta | null
+  metadata: OpenGraphMeta | null,
 ): WebClip {
   return {
     url,
@@ -122,7 +122,13 @@ export default function Command() {
   // Build live preview
   const preview = useMemo(() => {
     if (!url || !title) return "";
-    const clip = createClipFromState(url, title, description, selection, metadata);
+    const clip = createClipFromState(
+      url,
+      title,
+      description,
+      selection,
+      metadata,
+    );
     return buildTanaPasteFromClip(clip, supertag);
   }, [url, title, description, selection, supertag, metadata]);
 
@@ -197,7 +203,7 @@ export default function Command() {
             label: "Copy as Tana Paste",
             data: preview,
           },
-        ]
+        ],
       );
     } finally {
       setIsSaving(false);
@@ -272,10 +278,26 @@ export default function Command() {
         value={supertag}
         onChange={setSupertag}
       >
-        <Form.Dropdown.Item value="#bookmark" title="#bookmark" icon={Icon.Bookmark} />
-        <Form.Dropdown.Item value="#article" title="#article" icon={Icon.Document} />
-        <Form.Dropdown.Item value="#resource" title="#resource" icon={Icon.Link} />
-        <Form.Dropdown.Item value="#reference" title="#reference" icon={Icon.Book} />
+        <Form.Dropdown.Item
+          value="#bookmark"
+          title="#bookmark"
+          icon={Icon.Bookmark}
+        />
+        <Form.Dropdown.Item
+          value="#article"
+          title="#article"
+          icon={Icon.Document}
+        />
+        <Form.Dropdown.Item
+          value="#resource"
+          title="#resource"
+          icon={Icon.Link}
+        />
+        <Form.Dropdown.Item
+          value="#reference"
+          title="#reference"
+          icon={Icon.Book}
+        />
         <Form.Dropdown.Section title="Your Supertags">
           {supertags.slice(0, 20).map((tag) => (
             <Form.Dropdown.Item

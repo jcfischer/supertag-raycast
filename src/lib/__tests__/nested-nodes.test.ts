@@ -243,7 +243,9 @@ Root 2
 
     // Re-parse and verify structure
     const parsed = JSON.parse(json) as TanaNode[];
-    expect(parsed[0].children![1].children![0].children![0].name).toBe("Subtask 1.1");
+    expect(parsed[0].children![1].children![0].children![0].name).toBe(
+      "Subtask 1.1",
+    );
   });
 
   it("should handle empty lines gracefully", () => {
