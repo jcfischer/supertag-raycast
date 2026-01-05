@@ -159,6 +159,19 @@ function findMatchingField(
     }
   }
 
+  // Try reverse lookup: check if any schema field has aliases that include the template field
+  for (const field of schemaFields) {
+    const fieldAliases = FIELD_ALIASES[field.name];
+    if (fieldAliases) {
+      const match = fieldAliases.find(
+        (alias) => alias.toLowerCase() === templateFieldName.toLowerCase(),
+      );
+      if (match) {
+        return field.name;
+      }
+    }
+  }
+
   // Try partial matching as fallback (field name contains alias or vice versa)
   for (const alias of aliases) {
     const match = schemaFields.find(
