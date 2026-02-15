@@ -48,6 +48,10 @@
             {
               "title": "Ollama (Local)",
               "value": "ollama"
+            },
+            {
+              "title": "Raycast AI",
+              "value": "raycast"
             }
           ]
         },

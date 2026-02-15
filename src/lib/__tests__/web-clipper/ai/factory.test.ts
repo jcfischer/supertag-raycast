@@ -3,6 +3,7 @@ import { createAIProvider } from "../../../web-clipper/ai/factory";
 import { ClaudeProvider } from "../../../web-clipper/ai/providers/claude";
 import { OllamaProvider } from "../../../web-clipper/ai/providers/ollama";
 import { DisabledProvider } from "../../../web-clipper/ai/providers/disabled";
+import { RaycastProvider } from "../../../web-clipper/ai/providers/raycast";
 
 describe("AI Provider Factory", () => {
   it("should create disabled provider", () => {
@@ -48,4 +49,12 @@ describe("AI Provider Factory", () => {
     });
     expect(provider).toBeInstanceOf(OllamaProvider);
   });
+
+  it("should create Raycast AI provider", () => {
+    const provider =  createAIProvider({
+        provider: "raycast",
+        autoSummarize: false
+      });
+      expect(provider).toBeInstanceOf(RaycastProvider);
+  })
 });

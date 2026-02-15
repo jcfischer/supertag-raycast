@@ -62,7 +62,7 @@ export type DomainPreference = z.infer<typeof DomainPreferenceSchema>;
  * AI provider configuration
  */
 export const AIConfigSchema = z.object({
-  provider: z.enum(["claude", "ollama", "disabled"]),
+  provider: z.enum(["claude", "ollama", "raycast", "disabled"]),
   claudeApiKey: z.string().optional(),
   ollamaEndpoint: z.string().optional(),
   ollamaModel: z.string().optional(),

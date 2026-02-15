@@ -20,7 +20,7 @@ declare namespace Preferences {
   /** Preferences accessible in the `clip-web` command */
   export type ClipWeb = ExtensionPreferences & {
   /** AI Provider - AI provider for summarization and key point extraction */
-  "aiProvider": "disabled" | "claude" | "ollama",
+  "aiProvider": "disabled" | "claude" | "ollama" | "raycast",
   /** Claude API Key - Anthropic API key (starts with sk-ant-) */
   "claudeApiKey"?: string,
   /** Ollama Endpoint - Ollama API endpoint */

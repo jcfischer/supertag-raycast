@@ -55,7 +55,7 @@ const schemaCache = new SchemaCache();
 
 // Preferences interface
 interface Preferences {
-  aiProvider: "claude" | "ollama" | "disabled";
+  aiProvider: "claude" | "ollama" | "raycast" | "disabled";
   claudeApiKey?: string;
   ollamaEndpoint?: string;
   ollamaModel?: string;
